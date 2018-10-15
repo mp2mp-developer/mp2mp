@@ -289,9 +289,11 @@ main(int argc, char *argv[])
 			usage(progname, 0);
 			break;
 		case 'L':
+            log_notice("lflag!\n");
 			lflag = 1;
 			break;
 		case 'E':
+            log_notice("eflag!\n");
 			eflag = 1;
 			break;
 		default:
