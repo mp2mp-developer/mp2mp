@@ -227,7 +227,6 @@ main(int argc, char *argv[])
 
 	/* get program name */
 	progname = ((p = strrchr(argv[0], '/')) ? ++p : argv[0]);
-
 	saved_argv0 = argv[0];
 	if (saved_argv0 == NULL)
 		saved_argv0 = (char *)"ldpd";
@@ -289,11 +288,9 @@ main(int argc, char *argv[])
 			usage(progname, 0);
 			break;
 		case 'L':
-            log_notice("lflag!\n");
 			lflag = 1;
 			break;
 		case 'E':
-            log_notice("eflag!\n");
 			eflag = 1;
 			break;
 		default:

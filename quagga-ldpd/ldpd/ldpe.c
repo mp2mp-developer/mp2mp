@@ -103,6 +103,7 @@ ldpe(const char *user, const char *group)
 {
 	struct thread		 thread;
 
+    log_notice("ldpe");
 	leconf = config_new_empty();
 
 #ifdef HAVE_SETPROCTITLE
