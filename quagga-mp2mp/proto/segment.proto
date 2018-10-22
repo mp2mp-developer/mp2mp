@@ -1,0 +1,27 @@
+syntax="proto2";
+package qqnews;
+
+message Token
+{
+    required bytes vtag_id = 1;
+    required bytes word = 2;
+    repeated Ext ext = 3;
+}
+message Ext
+{
+    optional bytes key = 1;
+    optional bytes value = 2;
+}
+
+message SegmentReq
+{
+    required bytes sentence = 1;
+}
+
+message SegmentResp
+{
+     repeated Token token = 1;
+     optional bytes status = 2;
+}
+
+

@@ -1,0 +1,15 @@
+syntax = "proto2";
+
+import "proto/doc_infos/short_video.proto";
+import "proto/doc_infos/article_news.proto";
+import "proto/indexing/docinfo_type.proto";
+
+message GenericDocInfo {
+  required DocType doc_type = 1;
+  optional PbTypeArticleNews article_news = 2;
+  optional PbTypeShortVideo short_video = 3;
+}
+
+message DocInfoResponse {
+  repeated GenericDocInfo doc_info = 1;
+}

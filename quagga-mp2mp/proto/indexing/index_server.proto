@@ -1,0 +1,13 @@
+syntax="proto2";
+package indexer;
+
+option cc_generic_services = true;
+
+message IndexRequest {};
+message IndexResponse {};
+
+service IndexingService {
+  rpc Search(IndexRequest) returns (IndexResponse);
+  rpc GetDocInfo(IndexRequest) returns (IndexResponse);
+  rpc UpdateIndex(IndexRequest) returns (IndexResponse);
+};

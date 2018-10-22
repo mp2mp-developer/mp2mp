@@ -1,0 +1,23 @@
+syntax="proto2";
+package qqnews;
+
+message UserShortBehaviour{
+    required int32 id = 1;
+    required int32 pv = 2;
+    required int32 click = 3;
+    required int32 time_passed = 4;
+}
+
+message UserSession{
+    repeated int32 clicked_cate1_list = 1;
+    repeated int32 clicked_cate2_list = 2;
+    repeated int32 clicked_tag_list = 3;
+    repeated int32 clicked_topic_list = 4;
+    repeated int32 clicked_title_list = 5;
+    repeated int64 clicked_longtime_news_list = 6;
+    repeated UserShortBehaviour cate1_usb_list = 7;
+    repeated UserShortBehaviour cate2_usb_list = 8;
+    repeated UserShortBehaviour tag_usb_list = 9;
+    repeated UserShortBehaviour topic_usb_list = 10;
+    repeated UserShortBehaviour title_usb_list = 11;
+}

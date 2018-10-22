@@ -1,0 +1,408 @@
+syntax="proto2";
+package qqnews;
+
+import "proto/policy.proto";
+import "proto/newsrcm.proto";
+
+message KBIdInfo {    //用户ID，一个用户可以用多个设备或用户ID来标识；
+    repeated string qq = 1;
+    repeated string openid = 2; //微信openid
+    repeated string omgid = 3;
+    repeated string omgbizid = 4;
+    repeated string idfa = 5;
+    repeated string imei = 6;
+    repeated string imsi = 7;
+    repeated string devid = 8;  //devid
+    repeated string guid = 9;   //app生成的uid
+    repeated string mid = 10;
+    repeated string idfv = 11;
+    optional uint32 flush_num = 12;
+    repeated string commid = 13;
+}
+
+message AttributeItem {
+    required int32 index = 1;
+    required string value = 2;
+}
+
+message UserAttributes {
+    repeated AttributeItem attribute = 1;
+}
+
+message BaseProfile {  //基础画像
+    optional int32 age = 1;
+    optional int32 sex = 2;             //性别  1 男 2 女 0 未知
+    optional string country = 3;
+    optional string province = 4;
+    optional string city = 5;
+    optional string profession = 6;      //职业
+    optional string education = 7;       //学历
+    optional int32 agesex_group = 8;    //年龄性别分群: 1-少男少女版 2-老年版 3-大学生版 4-白领版 5-打工版
+    optional string school = 9;       //院校
+    optional string company = 10;       //公司
+    optional string hometown = 11;       //家乡城市
+    optional string star = 12;       //星座
+    optional int32 occupation = 13;      //微博信息里的行业代号
+    repeated int32 location_group = 14;      //按地理信息得到的人群聚类
+    optional UserAttributes user_attributes = 15; //挖掘的用户属性特征集合
+    repeated int32 sub_medias = 16;      //用户订阅媒体id列表
+}
+
+message CatProfile {   //类目兴趣
+    optional string any = 1;   //类型，预留
+    optional string weight = 2; //权重
+    optional string lv1 = 3;    //一级类目
+    optional string lv2 = 4;    //二级类目
+    optional string lv3 = 5;    //三级类目
+    optional string lv4 = 6;    //四级类目
+}
+
+message CatExtProfile {   //类目扩展兴趣
+    optional string type = 1;   //类型，预留
+    optional string weight = 2; //权重
+    optional string lv1 = 3;    //一级类目
+    optional string lv2 = 4;    //二级类目
+    optional string lv3 = 5;    //三级类目
+    optional string lv4 = 6;    //四级类目
+}
+
+message TopicProfile {   //topic兴趣
+    optional string any = 1;   //类型，预留
+    optional string weight = 2; //权重
+    optional string lv1 = 3;    //一级类目
+    optional string lv2 = 4;    //二级类目
+    optional string lv3 = 5;    //三级类目
+    optional string lv4 = 6;    //四级类目
+}
+
+message TagExtProfile {   //扩展标签兴趣
+    optional string type = 1;   //类型，预留
+    optional string weight = 2; //权重
+    optional string tag = 3;    //标签
+    optional string lv1 = 4;    //一级类目
+    optional string lv2 = 5;    //二级类目
+    optional string lv3 = 6;    //三级类目
+    optional string lv4 = 7;    //四级类目
+}
+
+message CrossTagProfile {   //标签兴趣
+    optional string any = 1;   //类型，预留
+    optional string weight = 2; //权重
+    optional string tag = 3;    //标签
+    optional string lv1 = 4;    //一级类目
+    optional string lv2 = 5;    //二级类目
+    optional string lv3 = 6;    //三级类目
+    optional string lv4 = 7;    //四级类目
+    optional string tag2 = 8;    //标签
+}
+
+message TagProfile {   //标签兴趣
+    optional string any = 1;   //类型，预留
+    optional string weight = 2; //权重
+    optional string tag = 3;    //标签
+    optional string lv1 = 4;    //一级类目
+    optional string lv2 = 5;    //二级类目
+    optional string lv3 = 6;    //三级类目
+    optional string lv4 = 7;    //四级类目
+}
+
+message EntityProfile {   //实体词兴趣
+    optional string any = 1;   //类型，预留
+    optional string weight = 2; //权重
+    optional string entity = 3;    //标签
+    optional string lv1 = 4;    //一级类目
+    optional string lv2 = 5;    //二级类目
+    optional string lv3 = 6;    //三级类目
+    optional string lv4 = 7;    //四级类目
+}
+
+message CatStyle {   //类目格调
+    optional string lv1 = 1;    //一级类目
+    optional string lv2 = 2;    //二级类目
+    optional string lv3 = 3;    //三级类目
+    optional string lv4 = 4;    //四级类目
+    optional int32 high_level_num = 5;
+    optional int32 mid_level_num = 6;
+    optional int32 low_level_num = 7;
+    optional double score = 8;
+}
+
+message TagStyle {   //tag格调
+    optional string lv1 = 1;    //一级类目
+    optional string lv2 = 2;    //二级类目
+    optional string lv3 = 3;    //三级类目
+    optional string lv4 = 4;    //四级类目
+    optional string tag = 5;    //标签
+    optional int32 high_level_num = 6;
+    optional int32 mid_level_num = 7;
+    optional int32 low_level_num = 8;
+    optional double score = 9;
+}
+
+message StyleProfile {
+    repeated CatStyle cat_style_profile = 1;
+    repeated TagStyle tag_style_profile = 2;
+}
+
+message ItemAttribute
+{
+    required string item = 1;
+    required int32  count = 2;
+    optional int32  lv = 3; //1-一级分类,2-二级分类
+}
+
+message UserDefData
+{
+    required string key = 1;
+    repeated ItemAttribute infos = 2;
+}
+
+message UserDefFlushData
+{
+    repeated UserDefData userdef_data = 1;
+}
+
+message FlushProfile
+{
+   repeated ItemAttribute taginfo = 1;
+   repeated ItemAttribute vtaginfo = 2;
+   repeated ItemAttribute catinfo = 3;
+   repeated ItemAttribute vcatinfo = 4;
+}
+
+message USession
+{
+   repeated FlushProfile flushs = 1;
+}
+
+message DocClickInfo
+{
+    required string cmsid = 1;
+    repeated ItemAttribute item_attr = 2;
+    optional uint32 flag = 3;
+}
+
+message TriggerExp
+{
+    required string reason = 1;
+    repeated ItemAttribute taginfo = 2;
+    repeated ItemAttribute catinfo = 3;
+    repeated ItemAttribute srcinfo = 4;
+}
+
+message TriggersExp
+{
+    repeated TriggerExp triggers_explose = 1;
+}
+
+message USTriggerExp
+{
+    repeated TriggersExp flushs = 1;
+}
+
+message USTriggerExpData
+{
+    repeated TriggersExp flushs = 1; //最近10刷各自的tag、cat统计数
+    optional TriggersExp sumary = 2; //汇总最近n刷(n<=10，可配置)的tag、cat统计
+}
+
+message USClick
+{
+    repeated DocClickInfo click_info = 1;
+}
+
+message USNoClick
+{
+   repeated ItemAttribute nc_taginfo = 1;
+   repeated ItemAttribute nc_vtaginfo = 2;
+   repeated ItemAttribute nc_catinfo = 3;
+   repeated ItemAttribute nc_vcatinfo = 4;
+}
+
+message RealTimeItem {  //实时反馈元素
+    required string id = 1;
+    optional string detail = 2; //分类为C，tag为T
+    optional int32 type = 3; //对于分类: 1-一级分类,2-二级分类
+    optional int32 count = 4;
+}
+
+message RealTimeProfile {   //实时兴趣列表
+    repeated RealTimeItem negative_cat_list = 1; //负反馈
+    repeated RealTimeItem negative_tag_list = 2;
+    repeated RealTimeItem negative_topic_list = 3;
+    repeated RealTimeItem positive_cat_list = 4; //正反馈，目前里面存的是点的文章id，点击的tag、cat数据请使用click_profile
+    repeated RealTimeItem positive_tag_list = 5;
+    repeated RealTimeItem positive_topic_list = 6;
+    repeated RealTimeItem noclick_tag_list = 7; //不点击的图文tag
+    repeated RealTimeItem noclick_cat_list = 8; //不点击的图文分类
+    repeated RealTimeItem noclick_video_tag_list = 9; //不点击的视频tag
+    repeated RealTimeItem noclick_video_cat_list = 10; //不点击的视频分类
+    optional FlushProfile flush_profile = 11; //用户一个session里的tag、cat的展示数
+    optional FlushProfile click_profile = 12; //用户一个session里的tag、cat的点击数
+    optional USTriggerExpData trigger_exp_data = 13; //用户session内各trigger曝光的tag、cat数量
+    repeated RealTimeItem negative_src_list = 14; //不喜欢的媒体
+    optional UserDefFlushData userdef_flush_data = 15;
+    repeated RealTimeItem negative_loc_list = 16; //不喜欢的地域
+}
+
+message MediaInterestProfile {   //媒体兴趣
+    optional string id = 1;   //媒体id
+    optional string name = 2;   //媒体名
+    optional string weight = 3; //权重
+    optional int32 i_id = 4; //媒体数字id，替代id字段
+    optional double d_weight = 5; //分数，替代weight字段
+    optional string any = 6;   //类型，预留
+}
+
+message MediaExtProfile {   //媒体兴趣
+    optional string id = 1;   //媒体id
+    optional string name = 2;   //媒体名
+    optional string weight = 3; //权重
+    optional int32 i_id = 4; //媒体数字id，替代id字段
+    optional double d_weight = 5; //分数，替代weight字段
+}
+
+message PrefrenceProfile {
+    optional string id = 1;   //偏好ID：
+    optional string weight = 2; //权重
+}
+
+message VideoProfile {   //视频兴趣
+    repeated CatProfile cat_profile = 1;
+    repeated TopicProfile topic_profile = 2;
+    repeated TagProfile tag_profile = 3;
+    repeated EntityProfile entity_profile = 4;
+    repeated MediaInterestProfile media_profile = 5;
+    repeated PrefrenceProfile pref_profile = 6;
+    repeated TagExtProfile tag_ext_profile = 7;
+    repeated CatExtProfile cat_ext_profile = 8;
+    repeated MediaExtProfile media_ext_profile = 9;
+    optional uint32 ins_count = 10; //正分兴趣数量
+}
+
+message CATEProfile {   //ee profile
+    required string uid = 1;        //用来做存储key的id，可以为devid或则qq或者openid
+    repeated CatProfile eeCatVector = 2;
+    optional string create_time = 3;
+    optional string userType = 4;
+    optional string lastDevid = 5;
+    optional string lastUin = 6;
+    optional string lastOpenid = 7;
+    optional string data_type = 8;
+    optional string debug_info = 9;
+}
+
+message ExtendedProfile {   //外部兴趣
+    required string src = 1;                //兴趣模型来源
+    repeated CatProfile cat_profile = 2;
+    repeated TopicProfile topic_profile = 3;
+    repeated TagProfile tag_profile = 4;
+    repeated EntityProfile entity_profile = 5;
+    repeated MediaInterestProfile media_profile = 6; //媒体兴趣
+}
+
+message MainModelInfo {
+    optional string model_uptime = 1; //主兴趣模型的更新写入时间
+    optional int32 model_version = 2; //主兴趣模型版本号
+}
+
+message KBUserInfo {  //用户信息，包括用户ID、画像、兴趣等
+    required KBIdInfo id_info = 1;
+    optional BaseProfile base_profile = 2;
+    repeated CatProfile cat_profile = 3;
+    repeated TopicProfile topic_profile = 4;
+    repeated TagProfile tag_profile = 5;
+    repeated EntityProfile entity_profile = 6;
+    optional RealTimeProfile realtime_profile = 7; //实时兴趣
+    optional VideoProfile video_profile = 8; //视频兴趣
+    optional string model_source = 9; //标识兴趣模型的来源包括：正式兴趣、实时计算临时兴趣、外部兴趣等等
+    optional int32 model_status = 10; //标识兴趣模型是否完整的，包括老用户状态(0)、新用户状态(1)、过渡状态(2)
+    optional CATEProfile ee_profile = 11; //给用户计算出来的CatE数据
+    repeated CatProfile tail_cat_profile = 12; //按权重占比截断后剩下的分类兴趣
+    optional int32 model_bucketid = 19; //模型实验分桶id（注意：非推荐策略分桶id！）
+    repeated MediaInterestProfile media_profile = 21; //媒体兴趣
+    repeated string app_processing_list = 23; //运行的applist
+    optional StyleProfile style_profile = 24; //格调profile
+    optional UserQualityVector user_quality_data = 27;
+    repeated TagExtProfile tag_ext_profile = 29; //扩展tag
+    optional MainModelInfo model_info = 30;
+    repeated ExtendedProfile ext_profiles = 31;
+    repeated CrossTagProfile cross_tag = 32;
+
+    optional ExtendedProfile outer_applist_profiles = 33; //外部兴趣：按用户安装app得到的兴趣
+
+    optional ExtendedProfile outer_user_sub_profile = 34;
+
+    optional uint32 user_level = 35 [default=0];
+    
+    optional string sensitive_level_city = 36;
+
+    optional string user_cluster = 37;
+
+    optional uint32 user_like_video = 38;
+
+    optional uint32 spec_new_user_cluster = 39;
+
+    optional uint32 history_click_num = 40;
+
+    optional int32 old_user = 41; //标记长期画像不存在但来过的用户
+}
+
+message InsExtReq {
+    optional KBUserInfo userinfo = 1;
+    repeated Conf conf = 2;
+}
+
+message InsExtRsp {
+    optional VideoProfile profile = 1;
+}
+
+message KBProfileReq {   //请求包
+    required string ver = 1;
+    required int32 cmd = 2;                 //命令字，预留
+    required int32 skey = 3;                //系统分配给使用方的请求key，用于区分调用方，预留
+    repeated KBIdInfo id_list = 4;        //用户ID列表
+    optional string user_choose_cats = 5;       //用户选择的分类兴趣，传NewsRcmRequest里的alg_extra字段
+    optional string channel = 6;                //请求来自的频道
+    optional uint32 alg_version = 7;                // 用于指定AB测试流量分配
+    repeated Conf conf = 8;
+    optional UserSpec user_spec = 9;     //接入层透传过来的用户信息结构
+    repeated ReqExt req_ext_args = 10;
+    optional uint32 policy_id = 11;
+}
+
+message KBProfileResp {   //响应包
+    required string ver = 1;
+    required int32 cmd = 2;                 //命令字，预留
+    required int32 skey = 3;                //系统分配给使用方的请求key，用于区分调用方，预留
+    required int32 ret_code = 4;            //返回码
+    repeated KBUserInfo user_info = 5 ;
+    optional string debug_info = 100;
+}
+
+message UserQualityVector {
+    repeated int32 indices = 1;
+    repeated double values = 2;
+}
+
+message LongTimeProfile {   //长期兴趣集合，用于ssdb存储和解析
+    required string uid = 1;        //用来做存储key的id，可以为devid或则qq或者openid
+    repeated CatProfile cat_profile = 2;
+    repeated TopicProfile topic_profile = 3;
+    repeated TagProfile tag_profile = 4;
+    repeated EntityProfile entity_profile = 5;
+    repeated MediaInterestProfile media_profile = 6;
+    optional string create_time = 7;
+    optional string userType = 8;
+    optional string lastDevid = 9;
+    optional string lastUin = 10;
+    optional string lastOpenid = 11;
+    optional string data_type = 12;
+    optional int32 historyClickNum = 13;
+    optional UserQualityVector user_quality_data = 14;
+    repeated TagExtProfile tag_ext_profile = 15; //扩展tag
+    optional string debug_info = 100;
+    repeated CrossTagProfile cross_tag = 101;
+}
+
+

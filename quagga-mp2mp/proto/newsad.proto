@@ -1,0 +1,39 @@
+syntax="proto2";
+package qqnews;
+
+import "proto/newsrcm.proto";
+
+message AdSlot 
+{
+    repeated uint32    loid          = 1; //广告类型：0 闪屏(会另外单独请求);  1 信息流;  2 底层页半屏;  3 文字链;  4 焦点图;  5 评论页;  6 组图最后一帧; 7 自媒体;8 种子视频
+    optional bytes      loc           = 2; //广告位ID，目前不使用（广告位都是lview根据apptype_locid_channel唯一定位的）
+    optional bytes      channel       = 3;
+    optional bytes      date          = 6;
+
+    optional bytes      playround     = 8;
+    optional bytes      article_id    = 9;
+}
+
+message AdReq
+{
+    required uint32    adtype        = 1;
+    optional uint32    chid          = 2;
+    required UserSpec  user_spec     = 3;
+    repeated AdSlot    slot          = 4;
+    repeated bytes     adext         = 5;
+    optional bytes     appversion    = 6;
+}
+
+message AdInfo
+{
+   required uint32  loid     = 1;//广告类型：splash 闪屏（会单独请求） | stream 信息流 | pic 底层页半屏 | text 文字链 | focus 焦点图 | comment 评论页 | photo 组图最后一帧 | seed 种子视频 
+   required uint32  rot      = 2;///轮播订单，后台轮播只有一个单
+   required uint32  seq      = 3;
+   required uint32  sub_type = 4;
+}
+
+message AdResp
+{
+    repeated AdInfo ad_info        = 1;
+    required bytes  ad_real_info   = 2;
+}
