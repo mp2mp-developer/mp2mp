@@ -103,7 +103,6 @@ ldpe(const char *user, const char *group)
 {
 	struct thread		 thread;
 
-    log_notice("ldpe");
 	leconf = config_new_empty();
 
 #ifdef HAVE_SETPROCTITLE
@@ -625,9 +624,6 @@ ldpe_dispatch_lde(struct thread *thread)
 			break;
 		case IMSG_CTL_END:
 		case IMSG_CTL_SHOW_LIB:
-		/////////////////////////////////////////////	
-		case IMSG_CTL_MLDP_LSP:	
-		//////////////////////////////////////////	
 		case IMSG_CTL_SHOW_L2VPN_PW:
 		case IMSG_CTL_SHOW_L2VPN_BINDING:
 			control_imsg_relay(&imsg);
@@ -675,9 +671,6 @@ ldpe_setup_sockets(int af, int disc_socket, int edisc_socket,
 	struct ldpd_af_global	*af_global;
 
 	af_global = ldp_af_global_get(&global, af);
-
-    log_notice("ldpe_setup_sockets, disc_socket: %d, edisc_socket: %d, session_socket: %d",
-            disc_socket, edisc_socket, session_socket);
 
 	/* discovery socket */
 	af_global->ldp_disc_socket = disc_socket;

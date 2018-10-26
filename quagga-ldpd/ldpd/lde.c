@@ -34,7 +34,6 @@
 #include "sigevent.h"
 #include "mpls.h"
 
-
 static void		 lde_shutdown(void);
 static int		 lde_dispatch_imsg(struct thread *);
 static int		 lde_dispatch_parent(struct thread *);
@@ -42,43 +41,17 @@ static __inline		 int lde_nbr_compare(struct lde_nbr *,
 			    struct lde_nbr *);
 static struct lde_nbr	*lde_nbr_new(uint32_t, struct lde_nbr *);
 static void		 lde_nbr_del(struct lde_nbr *);
-//static struct lde_nbr	*lde_nbr_find(uint32_t);
+static struct lde_nbr	*lde_nbr_find(uint32_t);
 static void		 lde_nbr_clear(void);
-
-///////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
-static __inline int	 label_nbr_compare(struct label_nbr *, struct label_nbr *);
-
-//static struct label_nbr  *label_nbr_add(uint32_t,uint32_t ,uint32_t,struct fec *fec,enum stream_type);
-static struct label_nbr	 *label_nbr_find(uint32_t,uint32_t,struct fec *);
-static	void	label_nbr_del(struct label_nbr*);
-static void		label_nbr_clear(void);
-
-static void 	tree_up(struct in_addr root,uint8_t ov);
-static void 	tree_down(struct in_addr root,uint8_t ov);
-
-///////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
 static void		 lde_map_free(void *);
 static int		 lde_address_add(struct lde_nbr *, struct lde_addr *);
 static int		 lde_address_del(struct lde_nbr *, struct lde_addr *);
 static void		 lde_address_list_free(struct lde_nbr *);
-//static struct Information	init_info(void);
-RB_GENERATE(nbr_tree, lde_nbr, entry, lde_nbr_compare)
-///////////////////////////////////////////////////////////////////
-RB_GENERATE(label_nbr_tree, label_nbr, entry, label_nbr_compare)
 
-/////////////////////////////////////////////////////////////////////
+RB_GENERATE(nbr_tree, lde_nbr, entry, lde_nbr_compare)
 
 struct ldpd_conf	*ldeconf;
 struct nbr_tree		 lde_nbrs = RB_INITIALIZER(&lde_nbrs);
-
-////////////////////////////////////////////////////////////////////////
-struct label_nbr_tree	label_nbrs = RB_INITIALIZER(&label_nbrs);
-//struct Information  	info ;
-int leaf ;
-//////////////////////////////////////////////////////////////////////
-
 
 static struct imsgev	*iev_ldpe;
 static struct imsgev	*iev_main;
@@ -186,9 +159,7 @@ lde_shutdown(void)
 	lde_gc_stop_timer();
 	lde_nbr_clear();
 	fec_tree_clear();
-//////////////////////
-	label_nbr_clear();
-//////////////////////
+
 	config_clear(ldeconf);
 
 	log_info("label decision engine exiting");
@@ -224,39 +195,21 @@ lde_dispatch_imsg(struct thread *thread)
 {
 	struct imsgev		*iev = THREAD_ARG(thread);
 	struct imsgbuf		*ibuf = &iev->ibuf;
-	struct imsg		 	imsg;
+	struct imsg		 imsg;
 	struct lde_nbr		*ln;
-///////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////
-	struct fec			fec1,fec5;
-	struct fec			*fec2,*fec3,*fec4;
-	struct fec_node 	*fn,*fn1,*fn2,*fn3;
-	struct fec_nh		*fnh,*fnh1;
-	struct lde_nbr		*ln1,*ln2;
-	struct label_nbr    *lnr,*lnr1,*lnr2,*lnr3;
-	//struct Information	info1,info2;
-	struct nbr          *nbrs;
-	struct lde_map		*me;
-	int i;
-	struct in_addr local;
-	//unit_32		peerid;
-/////////////////////////////////////////////////////
-////////////////////////////////////////////////////
-
-	struct map			 map; 
+	struct map		 map;
 	struct lde_addr		 lde_addr;
 	struct notify_msg	 nm;
 	ssize_t			 n;
 	int			 shut = 0;
-	
-	struct mldp_lsp_info	lsp;
+
 	iev->ev_read = NULL;
 
 	if ((n = imsg_read(ibuf)) == -1 && errno != EAGAIN)
 		fatal("imsg_read error");
 	if (n == 0)	/* connection closed */
 		shut = 1;
-	//init_info(info);
+
 	for (;;) {
 		if ((n = imsg_get(ibuf, &imsg)) == -1)
 			fatal("lde_dispatch_imsg: imsg_get error");
@@ -293,199 +246,6 @@ lde_dispatch_imsg(struct thread *thread)
 			switch (imsg.hdr.type) {
 			case IMSG_LABEL_MAPPING:
 				lde_check_mapping(&map, ln);
-			/////////////////////////////////////////////////////////////
-				printf("IMSG_LABEL_MAPPING  map_label:%d pid:%d\n",map.label,ln->peerid);
-				//info1=init_info();
-				local.s_addr=inet_addr("0.0.0.0");
-				lde_map2fec(&map, ln->id, &fec1);
-				//printf("fec1:root:%s  ov:%s\n",inet_ntoa(fec1.u.ipv4.prefix),fec1.u.ipv4.prefixlen);
-				
-				lnr=label_nbr_find(map.label,ln->peerid,&fec1);
-				if(lnr==NULL){//下游节点发送的mapping
-					printf("down stream send\n");
-					RB_FOREACH(fec4,fec_tree,&ft){
-						if(fec4->u.ipv4.prefix.s_addr==fec1.u.ipv4.prefix.s_addr){
-							fn1=(struct fec_node*)fec_find(&ft,fec4);
-							printf("root:prefix:%s\n",inet_ntoa(fn1->fec.u.ipv4.prefix));
-							break;
-						}
-					}
-					
-					LIST_FOREACH(fnh1, &fn1->nexthops, entry){
-						if(fnh1->nexthop.v4.s_addr==local.s_addr){
-							printf("nexthop:%s\n",inet_ntoa(fnh1->nexthop.v4));
-							leaf = 2;
-							break;
-						}
-							
-					}
-					if(leaf==2){
-						fn = calloc(1, sizeof(*fn));
-						if (fn == NULL)
-							fatal(__func__);
-
-						fn->fec = fec1;
-						printf("fec ov:%d\n",fec1.u.ipv4.prefixlen);
-						//RB_FOREACH(lnr1, label_nbr_tree, &label_nbrs){
-							//if(info1.root_addr.s_addr==fec1.u.ipv4.prefix.s_addr&&info1.ov==fec1.u.ipv4.prefixlen){
-								printf("root find down\n");
-								RB_FOREACH(lnr,label_nbr_tree,&label_nbrs)
-									if(lnr->fec.u.ipv4.prefix.s_addr==fec1.u.ipv4.prefix.s_addr&&lnr->fec.u.ipv4.prefixlen==fec1.u.ipv4.prefixlen)
-										break;
-                                if(lnr)
-									fn->local_label=lnr->local_label;
-								else
-									fn->local_label =lde_assign_label();
-								label_nbr_add(map.label,fn->local_label,ln->peerid, &fec1, STREAM_TYPE_DOWN);
-								
-								//break;
-							//}
-                            //else printf("can't find\n");
-						//}
-									
-						LIST_INIT(&fn->upstream);
-						LIST_INIT(&fn->downstream);
-						LIST_INIT(&fn->nexthops);
-						//遍历label_nbr tree,fec=fec1,找出peerid，回复label
-					
-						if(!fec_find(&ln->sent_map, &fn->fec)){
-							lde_send_labelmapping(ln, fn, 1);
-							printf("root send labelmapping  lnid:%s\n",inet_ntoa(ln->id));
-							//printf("map infor: ln_id:%s:")
-						}
-						
-						
-						free(fn);
-					}
-					else{//下游节点发来，
-						leaf = 0;
-						RB_FOREACH(fec3,fec_tree,&ft)
-								printf("fectree:%s\n",inet_ntoa(fec3->u.ipv4.prefix));
-						printf("insert trans \n");
-						fn = calloc(1, sizeof(*fn));
-						if (fn == NULL)
-							fatal(__func__);
-						fn->fec = fec1;
-						//if(info1.root_addr.s_addr==fec1.u.ipv4.prefix.s_addr&&info1.ov==fec1.u.ipv4.prefixlen){
-								printf("real down\n");
-								RB_FOREACH(lnr,label_nbr_tree,&label_nbrs)
-									if(lnr->fec.u.ipv4.prefix.s_addr==fec1.u.ipv4.prefix.s_addr&&lnr->fec.u.ipv4.prefixlen==fec1.u.ipv4.prefixlen)
-										break;
-                                if(lnr)
-									fn->local_label=lnr->local_label;
-								else
-									fn->local_label =lde_assign_label();
-								label_nbr_add(map.label,fn->local_label,ln->peerid, &fec1, STREAM_TYPE_DOWN);
-								RB_FOREACH(lnr,label_nbr_tree,&label_nbrs){
-									printf("lnr_addr:%s  nbr:%s\n",inet_ntoa(lnr->fec.u.ipv4.prefix),inet_ntoa(lde_nbr_find(ln->peerid)->id));
-									
-								}
-								//break;
-					//	}
-							RB_FOREACH(fec3,fec_tree,&ft)
-								printf("fectree:%s\n",inet_ntoa(fec3->u.ipv4.prefix));		
-						//fn->local_label =lde_assign_label();
-						LIST_INIT(&fn->upstream);
-						LIST_INIT(&fn->downstream);
-						LIST_INIT(&fn->nexthops);
-						
-						RB_FOREACH(fec2, fec_tree, &ft){
-							if(fec2->u.ipv4.prefix.s_addr==fec1.u.ipv4.prefix.s_addr){
-								fn3=(struct fec_node*)fec_find(&ft, fec2);//找下一跳
-								LIST_FOREACH(fnh, &fn3->nexthops, entry) {
-									printf("next:%s\n",inet_ntoa(fnh->nexthop.v4));
-									ln1=lde_nbr_find_by_addr(fnh->af,&fnh->nexthop);
-									if (ln1) {
-		
-										me = (struct lde_map *)fec_find(&ln1->sent_map, &fec1);
-										if (me==NULL){
-											label_nbr_add(NO_LABEL,fn->local_label, ln1->peerid, &fec1, STREAM_TYPE_UP);
-											lde_send_labelmapping(ln1, fn, 1);
-											printf("trans sent mapping\n");
-
-										}
-		
-										else{
-											lde_send_labelmapping(ln, fn, 1);
-										}
-									}
-									
-									free(fn);
-									//free(fn3);
-									break;
-								}
-								break;//*fec2,找出root的fec_node
-							}
-						}
-							
-										
-							RB_FOREACH(fec3,fec_tree,&ft)
-								printf("fectree:%s\n",inet_ntoa(fec3->u.ipv4.prefix));
-						
-					}
-				}
-				
-				else{
-					printf("up stream send\n");
-					lnr->label=map.label;
-					if(leaf!=1){
-						//if(lnr.label==NO_LABEL){//上游发送的mapping，本节点为transit节点
-						printf("trans to down\n");
-							fn = calloc(1, sizeof(*fn));
-							if (fn == NULL)
-								fatal(__func__);
-							fn->fec = fec1;
-							RB_FOREACH(lnr1, label_nbr_tree, &label_nbrs){
-								if(lnr1->fec.u.ipv4.prefix.s_addr==fec1.u.ipv4.prefix.s_addr&&lnr1->fec.u.ipv4.prefixlen==fec1.u.ipv4.prefixlen){
-									printf("real up\n");
-									if(lnr1->local_label==NO_LABEL){
-                                		fn->local_label =lde_assign_label();
-										printf("no label");
-									}
-									else{
-										fn->local_label =lnr1->local_label;
-										printf("label:%d",fn->local_label);
-									}
-									break;
-								}
-
-							}
-							//fn->local_label =lde_assign_label();
-							LIST_INIT(&fn->upstream);
-							LIST_INIT(&fn->downstream);
-							LIST_INIT(&fn->nexthops);
-							RB_FOREACH(lnr1, label_nbr_tree, &label_nbrs){//遍历label_nbr tree,找出.type==STREAM_TYPE_DOWN
-								printf("fec1:%s--l%s--nbr:%s\n",inet_ntoa(fec1.u.ipv4.prefix),inet_ntoa(lnr1->fec.u.ipv4.prefix),inet_ntoa(lde_nbr_find(lnr1->peerid)->id));
-								printf("fec1:%d----nbr:%d\n",lnr1->fec.u.ipv4.prefixlen,fec1.u.ipv4.prefixlen);
-								if(lnr1->type==STREAM_TYPE_DOWN&&lnr1->fec.u.ipv4.prefix.s_addr==fec1.u.ipv4.prefix.s_addr&&lnr1->fec.u.ipv4.prefixlen==fec1.u.ipv4.prefixlen)
-								{	ln1=lde_nbr_find(lnr1->peerid);
-
-									printf("find down");
-								}
-								if(!fec_find(&(ln1->sent_map), &fn->fec)){
-									lde_send_labelmapping(ln1, fn, 1);
-									printf("trans->down mapping");	
-								}
-							}
-							free(fn);
-							RB_FOREACH(fec3,fec_tree,&ft)
-								printf("fectree:%s\n",inet_ntoa(fec3->u.ipv4.prefix));
-						
-						}
-						
-					}
-				
-					RB_FOREACH(lnr, label_nbr_tree, &label_nbrs){
-						ln1=lde_nbr_find(lnr->peerid);
-						if(lnr->type==STREAM_TYPE_UP)i=1;
-						else i=0;
-						printf("rtctl.prefix.v4:%s  rtctl.prefixlen:%d  \n",inet_ntoa(lnr->fec.u.ipv4.prefix),lnr->fec.u.ipv4.prefixlen); 
-						printf("rtctl.local_label:%d   \n",lnr->local_label);
-						printf("nexthop:%s\n",inet_ntoa(ln1->id));
-						printf("in_use:%d\n",i);
-						printf("rtctl.r_label:%d\n",lnr->label);
-					}
-			////////////////////////////////////////////////////////////////
 				break;
 			case IMSG_LABEL_REQUEST:
 				lde_check_request(&map, ln);
@@ -497,43 +257,15 @@ lde_dispatch_imsg(struct thread *thread)
 					lde_check_release(&map, ln);
 				break;
 			case IMSG_LABEL_WITHDRAW:
-				if (map.type == MAP_TYPE_WILDCARD){
-					printf("rev withdraw1\n");
+				if (map.type == MAP_TYPE_WILDCARD)
 					lde_check_withdraw_wcard(&map, ln);
-/////////////////////////////////////////////////////////////////////////////////////
-					printf("rev withdraw\n");
-					lde_map2fec(&map, ln->id, &fec5);
-					RB_FOREACH(lnr2,label_nbr_tree,&label_nbrs)
-						if(lnr2->local_label==map.label&&lnr2->peerid==ln->peerid)
-							break;
-					//lnr2=label_nbr_find(map.label,ln->peerid,&fec5);		
-					if(lnr2!=NULL)printf("find lnr\n");
-					label_nbr_del(lnr2);
-					RB_FOREACH(lnr,label_nbr_tree,&label_nbrs)
-						if(lnr->type==STREAM_TYPE_DOWN)break;
-					
-					//info2=init_info();
-					if(leaf!=2&&lnr==NULL){
-						RB_FOREACH(lnr3, label_nbr_tree, &label_nbrs){
-							if(lnr3->type==STREAM_TYPE_UP){		
-								lde_send_labelwithdraw(lde_nbr_find(lnr3->peerid),NULL, lnr3->label, NULL);
-								lde_send_labelrelease(lde_nbr_find(lnr3->peerid), NULL, lnr3->label);
-								label_nbr_del(lnr3);
-							}
-						}
-					}
-									
-						
-				}
-//////////////////////////////////////////////////////////////////////////////////////
 				else
 					lde_check_withdraw(&map, ln);
 				break;
-				
 			case IMSG_LABEL_ABORT:
 				/* not necessary */
 				break;
-				}
+			}
 			break;
 		case IMSG_ADDRESS_ADD:
 			if (imsg.hdr.len - IMSG_HEADER_SIZE != sizeof(lde_addr))
@@ -590,7 +322,6 @@ lde_dispatch_imsg(struct thread *thread)
 			}
 			break;
 		case IMSG_NEIGHBOR_UP:
-			printf("nbr up\n");
 			if (imsg.hdr.len - IMSG_HEADER_SIZE !=
 			    sizeof(struct lde_nbr))
 				fatalx("lde_dispatch_imsg: wrong imsg len");
@@ -599,62 +330,6 @@ lde_dispatch_imsg(struct thread *thread)
 				fatalx("lde_dispatch_imsg: "
 				    "neighbor already exists");
 			lde_nbr_new(imsg.hdr.peerid, imsg.data);
-
-			////////////////////////////////////////////////////////////////////////////////
-		/*	info2=init_info();
-			printf("send label start4 :%d  ,%s\n ",info2.leaf,inet_ntoa(info2.root_addr));
-			if(info2.leaf==1){
-				printf("leaf\n");
-				RB_FOREACH(fec3, fec_tree, &ft){
-					 printf("fec_prefix: %s\n",inet_ntoa(fec3->u.ipv4.prefix));
-					if(fec3->u.ipv4.prefix.s_addr==info2.root_addr.s_addr){//root路由信息已记录
-						printf("find root\n");
-						fn2 = (struct fec_node*)fec_find(&ft, fec3);
-						printf("fn2 prefix:%s\n",inet_ntoa(fn2->fec.u.ipv4.prefix));
-						LIST_FOREACH(fnh1, &fn2->nexthops, entry) {	
-							printf("next:%s\n",inet_ntoa(fnh1->nexthop.v4));
-						   ln2=lde_nbr_find_by_lsrid(fnh1->nexthop.v4);
-						
-						}
-						printf("imsg.hdr.peerid:%d  ln2 pid:%d  \n",imsg.hdr.peerid,ln2->peerid);
-						if(lde_nbr_find(imsg.hdr.peerid)==ln2){//新建立的会话是上游节点
-							printf("real up\n");
-							fec4 = calloc(1, sizeof(*fec4));
-							if (fec4 == NULL)
-								fatal(__func__);
-							fec4->type=fec3->type;
-							fec4->u.ipv4.prefix=info2.root_addr;
-							fec4->u.ipv4.prefixlen=info2.ov;
-							if(!fec_find(&(ln2->sent_map), fec4)){//未向上游发过labelmapping
-							
-								fn1 = calloc(1, sizeof(*fn1));
-								if (fn1 == NULL)
-									fatal(__func__);
-								fn1->fec = *fec4;
-								fn1->local_label =lde_assign_label();
-								LIST_INIT(&fn1->upstream);
-								LIST_INIT(&fn1->downstream);
-								LIST_INIT(&fn1->nexthops);
-								label_nbr_add(NO_LABEL, fn1->local_label, imsg.hdr.peerid, fec4, STREAM_TYPE_UP);
-								lde_send_labelmapping(ln2, fn1, 1);
-								printf("send labelmapping local label:%d  root:%s    ov:%d\n",fn1->local_label, inet_ntoa(fn1->fec.u.ipv4.prefix),fn1->fec.u.ipv4.prefixlen);
-								free(fn1);
-								RB_FOREACH(lnr1,label_nbr_tree, &label_nbrs)
-									printf("label_nbr_add:  clabel:%d  pid:%d  \n",lnr1->local_label,lnr1->peerid);
-					
-						
-							}
-						
-							free(fec4);
-							break;
-						}
-					}
-				}
-			
-			}*/
-			//////////////////////////////////////////////////////////////////////////////////
-
-			
 			break;
 		case IMSG_NEIGHBOR_DOWN:
 			lde_nbr_del(lde_nbr_find(imsg.hdr.peerid));
@@ -665,21 +340,6 @@ lde_dispatch_imsg(struct thread *thread)
 			lde_imsg_compose_ldpe(IMSG_CTL_END, 0,
 			    imsg.hdr.pid, NULL, 0);
 			break;
-		
-		case IMSG_CTL_MLDP_LSP:
-			if (imsg.hdr.len - IMSG_HEADER_SIZE != sizeof(lsp))
-				fatalx("lde_dispatch_imsg: wrong imsg len");
-			memcpy(&lsp, imsg.data, sizeof(lsp));
-			log_debug("mpls mldp %s root-ip:%s lsp-id:%u", 
-			 lsp.protocol_type == MLDP_TYPE_MP2MP ? "p2mp" : "mp2mp",			 	
-			 lsp.op == OP_TYPE_ADD ? "add" : "del",
-			 inet_ntoa(lsp.root_ip), lsp.lsp_id);
-			 if(lsp.op == OP_TYPE_ADD)
-			 	tree_up(lsp.root_ip,lsp.lsp_id);
-			 if(lsp.op == OP_TYPE_DEL)
-			 	tree_down(lsp.root_ip,lsp.lsp_id);
-			lde_imsg_compose_ldpe(IMSG_CTL_MLDP_LSP, 0, imsg.hdr.pid, NULL, 0);
-			 break;
 		case IMSG_CTL_SHOW_L2VPN_PW:
 			l2vpn_pw_ctl(imsg.hdr.pid);
 
@@ -1049,7 +709,7 @@ void
 lde_fec2map(struct fec *fec, struct map *map)
 {
 	memset(map, 0, sizeof(*map));
-	printf("fec2map:root:%s  ov:%d\n", inet_ntoa(fec->u.ipv4.prefix),fec->u.ipv4.prefixlen);
+
 	switch (fec->type) {
 	case FEC_TYPE_IPV4:
 		map->type = MAP_TYPE_PREFIX;
@@ -1077,7 +737,7 @@ void
 lde_map2fec(struct map *map, struct in_addr lsr_id, struct fec *fec)
 {
 	memset(fec, 0, sizeof(*fec));
-	printf("map:root:%s   ov:%d\n",inet_ntoa(map->fec.prefix.prefix.v4), map->fec.prefix.prefixlen);
+
 	switch (map->type) {
 	case MAP_TYPE_PREFIX:
 		switch (map->fec.prefix.af) {
@@ -1327,6 +987,7 @@ lde_nbr_new(uint32_t peerid, struct lde_nbr *new)
 	fec_init(&ln->recv_req);
 	fec_init(&ln->sent_req);
 	fec_init(&ln->sent_wdraw);
+
 	TAILQ_INIT(&ln->addr_list);
 
 	if (RB_INSERT(nbr_tree, &lde_nbrs, ln) != NULL)
@@ -1387,13 +1048,13 @@ lde_nbr_del(struct lde_nbr *ln)
 	free(ln);
 }
 
-struct lde_nbr *
+static struct lde_nbr *
 lde_nbr_find(uint32_t peerid)
 {
 	struct lde_nbr		 ln;
 
 	ln.peerid = peerid;
-	printf("lde_nbr_find:peerid:%d\n",peerid);
+
 	return (RB_FIND(nbr_tree, &lde_nbrs, &ln));
 }
 
@@ -1401,24 +1062,11 @@ struct lde_nbr *
 lde_nbr_find_by_lsrid(struct in_addr addr)
 {
 	struct lde_nbr		*ln;
-	struct in_addr	addr1=addr;
-	struct in_addr  rt1,rt2;
-	rt1.s_addr=inet_addr("192.168.228.134");
-	rt2.s_addr=inet_addr("192.168.228.128");
-	if(rt1.s_addr==addr1.s_addr){
-		printf("addr==134   ");
-		addr1.s_addr=inet_addr("9.9.9.9");
-		printf("addr:%s",inet_ntoa(addr1));
-		}
-	else if(rt2.s_addr==addr1.s_addr)
-		addr1.s_addr=inet_addr("8.8.8.8");
-	RB_FOREACH(ln, nbr_tree, &lde_nbrs){
-		printf("ln_f_lsid:id:%s\n",inet_ntoa(ln->id));
-		if (ln->id.s_addr == addr1.s_addr){
-			printf("find lnbr\n");
+
+	RB_FOREACH(ln, nbr_tree, &lde_nbrs)
+		if (ln->id.s_addr == addr.s_addr)
 			return (ln);
-			}
-		}
+
 	return (NULL);
 }
 
@@ -1427,17 +1075,12 @@ lde_nbr_find_by_addr(int af, union ldpd_addr *addr)
 {
 	struct lde_nbr		*ln;
 
-	RB_FOREACH(ln, nbr_tree, &lde_nbrs){
-		printf("nbr id:%s \n ",inet_ntoa(ln->id));
-		if (lde_address_find(ln, af, addr) != NULL){
-			printf("yes\n");
+	RB_FOREACH(ln, nbr_tree, &lde_nbrs)
+		if (lde_address_find(ln, af, addr) != NULL)
 			return (ln);
-			}
-		}
-	printf("no\n");	
+
 	return (NULL);
 }
-
 
 static void
 lde_nbr_clear(void)
@@ -1447,209 +1090,6 @@ lde_nbr_clear(void)
 	 while ((ln = RB_ROOT(&lde_nbrs)) != NULL)
 		lde_nbr_del(ln);
 }
-
-////////////////////////////////////////////////////////////////
-
-/////////////////////////////////////////////////////////////////////////////
-
-/*struct Information
-init_info(void){
-	struct Information in;
-	in.leaf=0;
-	in.root=1;
-	in.ov=0x20;
-	in.root_addr.s_addr=inet_addr("8.8.8.8");
-	printf("leaf:%d  root:%d  ov:%d  addr:%s\n",in.leaf,in.root,in.ov,inet_ntoa(in.root_addr));
-	return (in);
-}*/
-static __inline int
-label_nbr_compare(struct label_nbr *a, struct label_nbr *b)
-{
-	if (a->fec.type < b->fec.type)
-		return (-1);
-	if (a->fec.type > b->fec.type)
-		return (1);
-	switch (a->fec.type) {
-	case FEC_TYPE_IPV4:
-		if (ntohl(a->fec.u.ipv4.prefix.s_addr) <
-		    ntohl(b->fec.u.ipv4.prefix.s_addr))
-			return (-1);
-		if (ntohl(a->fec.u.ipv4.prefix.s_addr) >
-		    ntohl(b->fec.u.ipv4.prefix.s_addr))
-			return (1);
-		if (a->fec.u.ipv4.prefixlen < b->fec.u.ipv4.prefixlen)
-			return (-1);
-		if (a->fec.u.ipv4.prefixlen > b->fec.u.ipv4.prefixlen)
-			return (1);
-		if(a->peerid > b->peerid)
-			return(1);
-		if(a->peerid < b->peerid)
-			return(-1);
-		return (0);
-		
-	case FEC_TYPE_IPV6:
-		if (memcmp(&a->fec.u.ipv6.prefix, &b->fec.u.ipv6.prefix,
-		    sizeof(struct in6_addr)) < 0)
-			return (-1);
-		if (memcmp(&a->fec.u.ipv6.prefix, &b->fec.u.ipv6.prefix,
-		    sizeof(struct in6_addr)) > 0)
-			return (1);
-		if (a->fec.u.ipv6.prefixlen < b->fec.u.ipv6.prefixlen)
-			return (-1);
-		if (a->fec.u.ipv6.prefixlen > b->fec.u.ipv6.prefixlen)
-			return (1);
-		if(a->peerid > b->peerid)
-			return(1);
-		if(a->peerid < b->peerid)
-			return(-1);
-		return (0);
-	case FEC_TYPE_PWID:
-		if (a->fec.u.pwid.type < b->fec.u.pwid.type)
-			return (-1);
-		if (a->fec.u.pwid.type > b->fec.u.pwid.type)
-			return (1);
-		if (a->fec.u.pwid.pwid < b->fec.u.pwid.pwid)
-			return (-1);
-		if (a->fec.u.pwid.pwid > b->fec.u.pwid.pwid)
-			return (1);
-		if (ntohl(a->fec.u.pwid.lsr_id.s_addr) <
-		    ntohl(b->fec.u.pwid.lsr_id.s_addr))
-			return (-1);
-		if (ntohl(a->fec.u.pwid.lsr_id.s_addr) >
-		    ntohl(b->fec.u.pwid.lsr_id.s_addr))
-			return (1);
-		return (0);
-	}
-
-	return (-1);
-}
-
-void
-label_nbr_add(uint32_t label,uint32_t local_label,uint32_t peerid,struct fec *fec,enum stream_type type)
-{
-	struct label_nbr	*lbn;
-
-	lbn = calloc(1, sizeof(*lbn));
-	if (lbn == NULL)
-		fatal(__func__);
-
-	lbn->fec = *fec;
-	lbn->label = label;
-	lbn->local_label = local_label;
-	lbn->peerid = peerid;
-	lbn->type = type;
-
-	if (RB_INSERT(label_nbr_tree, &label_nbrs, lbn) != NULL)
-			fatalx("lde_nbr_new: RB_INSERT failed");
-	
-}
-
-static struct label_nbr *
-label_nbr_find(uint32_t label,uint32_t peerid,struct fec *f){
-	struct label_nbr ln;
-	ln.local_label = label;
-	ln.peerid = peerid;
-	ln.fec = *f;
-	return(RB_FIND(label_nbr_tree, &label_nbrs, &ln));
-}
-
-static void label_nbr_del(struct label_nbr  *ln)
-{
-	if(ln==NULL)
-		return;
-	RB_REMOVE(label_nbr_tree, &label_nbrs, ln);
-	free(ln);
-
-}
-
-static void
-label_nbr_clear(void)
-{
-	struct label_nbr	*ln;
-
-	 while ((ln = RB_ROOT(&label_nbrs)) != NULL)
-		label_nbr_del(ln);
-}
-
-static void
-tree_up(struct in_addr root,uint8_t ov)
-{
-	//struct Information info2;
-	struct fec *fec3,*fec4;
-	struct lde_nbr *ln2;
-	struct fec_node *fn1,*fn2;
-	struct label_nbr *lnr1;
-	struct fec_nh *fnh1;
-	//info2=init_info();
-	
-	//if(info2.leaf==1){
-	leaf = 1;
-		RB_FOREACH(fec3, fec_tree, &ft){
-			 
-			if(fec3->u.ipv4.prefix.s_addr==root.s_addr){//root路由信息已记录
-				
-				fn2 = (struct fec_node*)fec_find(&ft, fec3);
-				
-				LIST_FOREACH(fnh1, &fn2->nexthops, entry) { 
-					printf("next:%s\n",inet_ntoa(fnh1->nexthop.v4));
-				   ln2=lde_nbr_find_by_addr(fnh1->af,&fnh1->nexthop);
-				
-				}
-					fec4 = calloc(1, sizeof(*fec4));
-					if (fec4 == NULL)
-						fatal(__func__);
-					fec4->type=fec3->type;
-					fec4->u.ipv4.prefix=root;
-					fec4->u.ipv4.prefixlen=ov;
-					//if(!fec_find(&(ln2->sent_map), fec4)){//未向上游发过labelmapping
-					
-						fn1 = calloc(1, sizeof(*fn1));
-						if (fn1 == NULL)
-							fatal(__func__);
-						fn1->fec = *fec4;
-						fn1->local_label =lde_assign_label();
-						LIST_INIT(&fn1->upstream);
-						LIST_INIT(&fn1->downstream);
-						LIST_INIT(&fn1->nexthops);
-						label_nbr_add(NO_LABEL, fn1->local_label,ln2->peerid, fec4, STREAM_TYPE_UP);
-						lde_send_labelmapping(ln2, fn1, 1);
-						free(fn1);	
-						
-				
-					//}
-				
-					free(fec4);
-					break;
-				
-			}
-		}
-	
-	
-
-}
-static void
-tree_down(struct in_addr root,uint8_t ov)
-{
-	//struct Information info;
-	struct label_nbr *lnr;
-	struct lde_nbr *ln;
-	
-	if(leaf = 1){
-		RB_FOREACH(lnr,label_nbr_tree,&label_nbrs){
-			if(lnr->fec.u.ipv4.prefix.s_addr==root.s_addr&&lnr->fec.u.ipv4.prefixlen==ov&&lnr->type==STREAM_TYPE_UP)				
-				ln=lde_nbr_find(lnr->peerid);
-				lde_send_labelwithdraw(ln,NULL, lnr->label, NULL);
-				lde_send_labelrelease(ln, NULL, lnr->label);
-				label_nbr_del(lnr);
-			
-		}
-	
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////
-
 
 struct lde_map *
 lde_map_add(struct lde_nbr *ln, struct fec_node *fn, int sent)
@@ -1842,17 +1282,12 @@ struct lde_addr *
 lde_address_find(struct lde_nbr *ln, int af, union ldpd_addr *addr)
 {
 	struct lde_addr		*lde_addr;
-	printf("addrs list in\n");
-	TAILQ_FOREACH(lde_addr, &ln->addr_list, entry){
-		printf("real in\n");
-		printf("ln addr:%s =?  addr:%s\n",inet_ntoa(lde_addr->addr.v4),inet_ntoa(addr->v4));
+
+	TAILQ_FOREACH(lde_addr, &ln->addr_list, entry)
 		if (lde_addr->af == af &&
 		    ldp_addrcmp(af, &lde_addr->addr, addr) == 0)
-			{
-			//printf("return ")
 			return (lde_addr);
-		    	}
-			}
+
 	return (NULL);
 }
 

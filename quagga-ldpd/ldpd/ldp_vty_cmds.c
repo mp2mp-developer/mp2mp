@@ -17,25 +17,6 @@ DEFUN (ldp_mpls_ldp,
   return ldp_vty_mpls_ldp (vty, args);
 }
 
-
-DEFUN (ldp_mpls_mldp_lsp, 
-       ldp_mpls_mldp_lsp_cmd,
-       "mpls mldp (p2mp-lsp|mp2mp-lsp) (add|del) root-ip (A.B.C.D|X:X::X:X) lsp-id <0-255>",  
-       " add p2mp lsp\n"
-       " add mp2mp lsp\n")
-{
-	struct vty_arg *args[] =
-	{
-		&(struct vty_arg) { .name = "protocol", .value = argv[0] },
-		&(struct vty_arg) { .name = "op",		.value = argv[1] },
-		&(struct vty_arg) { .name = "root-ip",	.value = argv[2] },
-		&(struct vty_arg) { .name = "lsp-id",	.value = argv[3] },
-		NULL
-	};
-
-	return mldp_vty_lsp(vty, args); 
-}
-
 DEFUN (ldp_l2vpn_word_type_vpls,
        ldp_l2vpn_word_type_vpls_cmd,
        "l2vpn WORD type vpls",
@@ -1118,8 +1099,6 @@ DEFUN (ldp_show_mpls_ldp_neighbor,
   return ldp_vty_show_neighbor (vty, args);
 }
 
-
-
 DEFUN (ldp_show_mpls_ldp_binding,
        ldp_show_mpls_ldp_binding_cmd,
        "show mpls ldp binding",
@@ -1718,7 +1697,6 @@ ldp_vty_init (void)
   install_node (&ldp_debug_node, ldp_debug_config_write);
   install_element (ENABLE_NODE, &ldp_show_mpls_ldp_neighbor_cmd);
   install_element (ENABLE_NODE, &ldp_show_mpls_ldp_binding_cmd);
-  install_element (ENABLE_NODE, &ldp_mpls_mldp_lsp_cmd);
   install_element (ENABLE_NODE, &ldp_show_mpls_ldp_discovery_cmd);
   install_element (ENABLE_NODE, &ldp_show_mpls_ldp_interface_cmd);
   install_element (ENABLE_NODE, &ldp_show_mpls_ldp_address_family_binding_cmd);
@@ -1747,7 +1725,6 @@ ldp_vty_init (void)
   install_element (ENABLE_NODE, &ldp_no_debug_mpls_ldp_zebra_cmd);
   install_element (VIEW_NODE, &ldp_show_mpls_ldp_neighbor_cmd);
   install_element (VIEW_NODE, &ldp_show_mpls_ldp_binding_cmd);
-  install_element (VIEW_NODE, &ldp_mpls_mldp_lsp_cmd);
   install_element (VIEW_NODE, &ldp_show_mpls_ldp_discovery_cmd);
   install_element (VIEW_NODE, &ldp_show_mpls_ldp_interface_cmd);
   install_element (VIEW_NODE, &ldp_show_mpls_ldp_address_family_binding_cmd);

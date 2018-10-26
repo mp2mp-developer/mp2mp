@@ -51,11 +51,6 @@
 #define	F_BLACKHOLE		0x0020
 #define	F_REDISTRIBUTED		0x0040
 
-//////////////////////////////////////////////////////////////////////////////////////
-
-
-///////////////////////////////////////////////////////////////////////////////////////
-
 struct evbuf {
 	struct msgbuf		 wbuf;
 	struct thread		*ev;
@@ -83,9 +78,6 @@ enum imsg_type {
 	IMSG_CTL_SHOW_NBR_DISC,
 	IMSG_CTL_SHOW_NBR_END,
 	IMSG_CTL_SHOW_LIB,
-	//////////////////////////////////
-	IMSG_CTL_MLDP_LSP,
-	///////////////////////////////////
 	IMSG_CTL_SHOW_L2VPN_PW,
 	IMSG_CTL_SHOW_L2VPN_BINDING,
 	IMSG_CTL_CLEAR_NBR,
@@ -209,9 +201,9 @@ struct map {
 	uint32_t	msg_id;
 	union {
 		struct {
-			uint16_t	af;	
-			uint8_t		prefixlen;//ov
-			union ldpd_addr	prefix;//根节点地址
+			uint16_t	af;
+			union ldpd_addr	prefix;
+			uint8_t		prefixlen;
 		} prefix;
 		struct {
 			uint16_t	type;
@@ -421,7 +413,7 @@ struct ldpd_af_global {
 	int			 ldp_session_socket;
 };
 
-struct ldpd_global {//本地接口信息
+struct ldpd_global {
 	int			 cmd_opts;
 	time_t			 uptime;
 	struct in_addr		 rtr_id;

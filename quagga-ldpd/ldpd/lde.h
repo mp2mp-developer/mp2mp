@@ -30,20 +30,14 @@ enum fec_type {
 	FEC_TYPE_PWID
 };
 
-enum stream_type{
-	STREAM_TYPE_UP,
-	STREAM_TYPE_DOWN
-};
-
 struct fec {
 	RB_ENTRY(fec)		entry;
 	enum fec_type		type;
 	union {
 		struct {
-			uint8_t		prefixlen;//OV
-			struct in_addr	prefix;//ROOT
-			
-		} ipv4;//mp2mp
+			struct in_addr	prefix;
+			uint8_t		prefixlen;
+		} ipv4;
 		struct {
 			struct in6_addr	prefix;
 			uint8_t		prefixlen;
@@ -120,63 +114,15 @@ struct fec_node {
 	uint32_t		 local_label;
 	void			*data;		/* fec specific data */
 };
-/////////////////////////////////////////////////////////////////////////
-enum mldp_type {
-	MLDP_TYPE_P2MP,
-	MLDP_TYPE_MP2MP,
-};
 
-enum op_type {
-	OP_TYPE_ADD,
-	OP_TYPE_DEL,
-};
-
-struct mldp_lsp_info
-{
-    uint8_t        op;
-    uint8_t        protocol_type;
-    struct in_addr root_ip;
-    uint8_t        lsp_id;
-};
-
-
-/////////////////////////////////////////////////////////////////////////
-struct label_nbr{
-	RB_ENTRY(label_nbr)	entry;
-	uint32_t	label;//remote_label
-	uint32_t	local_label;//
-	uint32_t	peerid;
-	struct fec	fec;//root+ov,唯一标识LSP
-	enum stream_type type;
-};
-RB_HEAD(label_nbr_tree, label_nbr);
-
-RB_PROTOTYPE(label_nbr_tree, label_nbr, entry,label_nbr_compare );
-
-struct Information{
-	int leaf;
-	int root;
-	struct in_addr root_addr;
-	uint8_t	ov;
-};
-
-//////////////////////////////////////////////////////////////////////////
 #define LDE_GC_INTERVAL 300
 
 extern struct ldpd_conf	*ldeconf;
 extern struct fec_tree	 ft;
 extern struct nbr_tree	 lde_nbrs;
-//extern struct Information info;
-//////////////////////////////////////////////////////
-extern struct label_nbr_tree label_nbrs;
-extern int leaf;
-//////////////////////////////////////////////////
 extern struct thread	*gc_timer;
 
 /* lde.c */
-struct Information init_info(void);
-void label_nbr_add(uint32_t,uint32_t ,uint32_t,struct fec *fec,enum stream_type);
-struct lde_nbr *lde_nbr_find(uint32_t);
 pid_t		 lde(const char *, const char *);
 int		 lde_imsg_compose_parent(int, pid_t, void *, uint16_t);
 int		 lde_imsg_compose_ldpe(int, uint32_t, pid_t, void *, uint16_t);

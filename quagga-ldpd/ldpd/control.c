@@ -89,7 +89,6 @@ control_listen(void)
 		return (-1);
 	}
 
-    log_notice("control_listen, control_fd: %d", control_fd);
 	return (accept_add(control_fd, control_accept, NULL));
 }
 
@@ -241,7 +240,6 @@ control_dispatch_imsg(struct thread *thread)
 		case IMSG_CTL_SHOW_DISCOVERY:
 			ldpe_adj_ctl(c);
 			break;
-		case IMSG_CTL_MLDP_LSP:
 		case IMSG_CTL_SHOW_LIB:
 		case IMSG_CTL_SHOW_L2VPN_PW:
 		case IMSG_CTL_SHOW_L2VPN_BINDING:

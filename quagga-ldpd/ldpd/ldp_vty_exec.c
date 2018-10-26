@@ -38,9 +38,7 @@ enum show_command {
 	SHOW_NBR,
 	SHOW_LIB,
 	SHOW_L2VPN_PW,
-	SHOW_L2VPN_BINDING,
-	SHOW_CTL_MLDP_LSP,
-	
+	SHOW_L2VPN_BINDING
 };
 
 struct show_filter {
@@ -48,7 +46,6 @@ struct show_filter {
 	union ldpd_addr	addr;
 	uint8_t		prefixlen;
 };
-
 
 #define LDPBUFSIZ	65535
 
@@ -292,33 +289,24 @@ show_lib_msg(struct vty *vty, struct imsg *imsg, struct show_filter *filter)
 		    log_addr(rt->af, &rt->prefix), rt->prefixlen);
 
 		if (rt->first) {
-			//vty_out(vty, "%s%s", dstnet, VTY_NEWLINE);
-			//vty_out(vty, "%-8sLocal binding: label: %s%s", "",
-			  //  log_label(rt->local_label), VTY_NEWLINE);
+			vty_out(vty, "%s%s", dstnet, VTY_NEWLINE);
+			vty_out(vty, "%-8sLocal binding: label: %s%s", "",
+			    log_label(rt->local_label), VTY_NEWLINE);
 
 			if (rt->remote_label != NO_LABEL) {
-				//vty_out(vty, "%-8sRemote bindings:%s", "",
-				  //  VTY_NEWLINE);
-				vty_out(vty, "%sNode            R-Label   L-Label   Root            OV        Relation%s",
-				    VTY_NEWLINE, VTY_NEWLINE);
-				
-				vty_out(vty, "-------------   "
-				    "-------   -------   -------------   -------   ----------%s", VTY_NEWLINE);
-				if(rt->in_use==1)
-					vty_out(vty, "%-20s%s        %s        %s        %d        UP_STREAM", inet_ntoa(rt->nexthop),
-			    		log_label(rt->remote_label), log_label(rt->local_label),log_addr(rt->af, &rt->prefix),
-			    		 rt->prefixlen,VTY_NEWLINE);
-				else
-					vty_out(vty, "%-20s%s        %s        %s        %d        DOWN_STREAM",  inet_ntoa(rt->nexthop),
-			    		log_label(rt->remote_label), log_label(rt->local_label),log_addr(rt->af, &rt->prefix),
-			    		 rt->prefixlen,VTY_NEWLINE);
+				vty_out(vty, "%-8sRemote bindings:%s", "",
+				    VTY_NEWLINE);
+				vty_out(vty, "%-12sPeer                Label%s",
+				    "", VTY_NEWLINE);
+				vty_out(vty, "%-12s-----------------   "
+				    "---------%s", "", VTY_NEWLINE);
 			} else
 				vty_out(vty, "%-8sNo remote bindings%s", "",
 				    VTY_NEWLINE);
 		}
-	/*	if (rt->remote_label != NO_LABEL)
+		if (rt->remote_label != NO_LABEL)
 			vty_out(vty, "%12s%-20s%s%s", "", inet_ntoa(rt->nexthop),
-			    rt->,log_label(rt->remote_label), VTY_NEWLINE);*/
+			    log_label(rt->remote_label), VTY_NEWLINE);
 		break;
 	case IMSG_CTL_END:
 		vty_out(vty, "%s", VTY_NEWLINE);
@@ -329,7 +317,6 @@ show_lib_msg(struct vty *vty, struct imsg *imsg, struct show_filter *filter)
 
 	return (0);
 }
-
 
 static int
 show_l2vpn_binding_msg(struct vty *vty, struct imsg *imsg)
@@ -482,9 +469,6 @@ ldp_vty_dispatch(struct vty *vty, struct imsgbuf *ibuf, enum show_command cmd,
 				break;
 			case SHOW_L2VPN_BINDING:
 				done = show_l2vpn_binding_msg(vty, &imsg);
-				break;
-            case SHOW_CTL_MLDP_LSP:
-				done = 1;
 				break;
 			default:
 				break;
@@ -680,54 +664,4 @@ ldp_vty_clear_nbr(struct vty *vty, struct vty_arg *args[])
 	close(ibuf.fd);
 
 	return (CMD_SUCCESS);
-}
-
-
-int
-mldp_vty_lsp(struct vty *vty, struct vty_arg *args[])
-{
-    const char              *protocol;
-    const char              *op;
-	const char              *addr_str;
-	int			            lsp_id;
-    struct in_addr          root_ip;
-    struct imsgbuf		    ibuf;
-	struct mldp_lsp_info	lsp;
-
-    protocol = vty_get_arg_value(args, "protocol");
-    op       = vty_get_arg_value(args, "op");
-	addr_str = vty_get_arg_value(args, "root-ip");
-	lsp_id   = atoi(vty_get_arg_value(args, "lsp-id"));
-
-    /* vty_out(vty, "pro : %s%s", protocol, VTY_NEWLINE); */
-    /* vty_out(vty, "op  : %s%s", op, VTY_NEWLINE); */
-    /* vty_out(vty, "root-ip : %s%s", addr_str, VTY_NEWLINE); */
-	/* vty_out(vty, "lsp-id  : %d%s", lsp_id, VTY_NEWLINE); */ 
-
-    if (inet_pton(AF_INET, addr_str, &root_ip) != 1 ||
-	    bad_addr_v4(root_ip)) {
-		vty_out(vty, "%% Malformed address%s", VTY_NEWLINE);
-		return (CMD_WARNING);
-	}
-
-	if (ldp_vty_connect(&ibuf) < 0)
-		return (CMD_WARNING);
-
-	memset(&lsp, 0, sizeof(lsp));
-	lsp.root_ip = root_ip;
-    lsp.lsp_id = lsp_id;
-    
-    if (!strcmp(protocol, "p2mp-lsp"))
-       lsp.protocol_type = MLDP_TYPE_P2MP;
-    else if (!strcmp(protocol, "mp2mp-lsp"))
-       lsp.protocol_type = MLDP_TYPE_MP2MP;
-
-    if (!strcmp(op, "add"))
-        lsp.op = OP_TYPE_ADD;
-    else if (!strcmp(op, "del"))
-        lsp.op = OP_TYPE_DEL;
-    
-    imsg_compose(&ibuf, IMSG_CTL_MLDP_LSP, 0, 0, -1, &lsp, sizeof(lsp));
-
-	return (ldp_vty_dispatch(vty, &ibuf, SHOW_CTL_MLDP_LSP, NULL));
 }

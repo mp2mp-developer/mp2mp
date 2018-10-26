@@ -23,7 +23,6 @@
 #include "lde.h"
 #include "log.h"
 
-
 #include "mpls.h"
 
 static __inline int	 fec_compare(struct fec *, struct fec *);
@@ -152,16 +151,15 @@ lde_nbr_is_nexthop(struct fec_node *fn, struct lde_nbr *ln)
 void
 rt_dump(pid_t pid)
 {
-/*
 	struct fec		*f;
 	struct fec_node		*fn;
 	struct lde_map		*me;
 	static struct ctl_rt	 rtctl;
 
-	RB_FOREACH(f, fec_tree, &ft) {//遍历路由信息
+	RB_FOREACH(f, fec_tree, &ft) {
 		fn = (struct fec_node *)f;
 		if (fn->local_label == NO_LABEL &&
-		    LIST_EMPTY(&fn->downstream))//没有交互的lsr
+		    LIST_EMPTY(&fn->downstream))
 			continue;
 
 		rtctl.first = 1;
@@ -181,7 +179,7 @@ rt_dump(pid_t pid)
 		}
 
 		rtctl.local_label = fn->local_label;
-		LIST_FOREACH(me, &fn->downstream, entry) {//遍历收到的map
+		LIST_FOREACH(me, &fn->downstream, entry) {
 			rtctl.in_use = lde_nbr_is_nexthop(fn, me->nexthop);
 			rtctl.nexthop = me->nexthop->id;
 			rtctl.remote_label = me->map.label;
@@ -199,40 +197,6 @@ rt_dump(pid_t pid)
 			    &rtctl, sizeof(rtctl));
 		}
 	}
-
-*/
-
-	struct label_nbr *lnb;
-	//struct fec_node 	*fn;
-	struct lde_nbr	*ln;
-	static struct ctl_rt rtctl;
-	RB_FOREACH(lnb, label_nbr_tree, &label_nbrs){
-		rtctl.first = 1;
-		switch (lnb->fec.type){
-			case FEC_TYPE_IPV4:
-			rtctl.af = AF_INET;
-			rtctl.prefix.v4 = lnb->fec.u.ipv4.prefix;
-			rtctl.prefixlen = lnb->fec.u.ipv4.prefixlen;
-			break;
-		case FEC_TYPE_IPV6:
-			rtctl.af = AF_INET6;
-			rtctl.prefix.v6 = lnb->fec.u.ipv6.prefix;
-			rtctl.prefixlen = lnb->fec.u.ipv6.prefixlen;
-			break;
-		default:
-			continue;
-		}
-		rtctl.local_label=lnb->local_label;
-		rtctl.remote_label=lnb->label;
-		ln=lde_nbr_find(lnb->peerid);
-		rtctl.nexthop=ln->id;
-		if(lnb->type==STREAM_TYPE_UP)rtctl.in_use=1;
-		else rtctl.in_use=0;		
-		lde_imsg_compose_ldpe(IMSG_CTL_SHOW_LIB, 0, pid,
-			    &rtctl, sizeof(rtctl));
-		rtctl.first = 0;
-	}
-	
 }
 
 void
@@ -358,7 +322,6 @@ egress_label(enum fec_type fec_type)
 	return (MPLS_LABEL_IMPLNULL);
 }
 
-//建立fec_node信息
 void
 lde_kernel_insert(struct fec *fec, int af, union ldpd_addr *nexthop,
     uint8_t priority, int connected, void *data)
@@ -367,93 +330,35 @@ lde_kernel_insert(struct fec *fec, int af, union ldpd_addr *nexthop,
 	struct fec_nh		*fnh;
 	struct lde_map		*me;
 	struct lde_nbr		*ln;
-	////////////////////////////////////////////
-	struct fec_node		*fn1;
-	struct fec          *fec1;
-	struct lde_nbr		*ln1;
-	struct Information	info;
-	///////////////////////////////////////////////
-    printf("kernel_insert start\n");
-//	leaf = 0;
-	fn = (struct fec_node *)fec_find(&ft, fec);//查找本地fec_tree（fec_node_tree），fn=NULL说明是新加入的路由信息，新增一个fec_node
+
+	fn = (struct fec_node *)fec_find(&ft, fec);
 	if (fn == NULL)
-		fn = fec_add(fec);//初始建立fec_node，local_label=NO_LABEL
+		fn = fec_add(fec);
 	if (fec_nh_find(fn, af, nexthop, priority) != NULL)
 		return;
 
-   //fec_node中下一跳信息不匹配
 	if (fn->fec.type == FEC_TYPE_PWID)
 		fn->data = data;
 
-/*	if (fn->local_label == NO_LABEL) {//分配local_label
+	if (fn->local_label == NO_LABEL) {
 		if (connected)
 			fn->local_label = egress_label(fn->fec.type);
 		else
 			fn->local_label = lde_assign_label();
-*/
+
 		/* FEC.1: perform lsr label distribution procedure */
-		//向邻居通报新增的fec_node信息
-	/*	if(fn->fec.u.ipv4.type){//当其为叶子节点时，向上发送labelmapping
-		RB_FOREACH(ln, nbr_tree, &lde_nbrs) 
-			
+		RB_FOREACH(ln, nbr_tree, &lde_nbrs)
 			lde_send_labelmapping(ln, fn, 1);
-			}
-		}*/
-	//nexthop信息加入，remote_label初始为NO_LABEL,通报变化信息
-	fnh = fec_nh_add(fn, af, nexthop, priority);//该fec与谁（nexthop）直连
-	printf("%s\n",inet_ntoa(fec->u.ipv4.prefix));
-	printf("nexthop:%s\n",inet_ntoa(fnh->nexthop.v4));
+	}
+
+	fnh = fec_nh_add(fn, af, nexthop, priority);
 	lde_send_change_klabel(fn, fnh);
-	
-///////////////////////////////////////////////////////////////////////////////////
-	/*info=init_info();
-	printf("%s\n",inet_ntoa(fec->u.ipv4.prefix));
-	if(info.leaf&&info.root_addr.s_addr==fec->u.ipv4.prefix.s_addr){//root 路由加入，本节点为叶子节点，判断与下一跳的会话是否建立
-		switch (fn->fec.type) {
-			case FEC_TYPE_IPV4:
-			case FEC_TYPE_IPV6:
-				ln1 = lde_nbr_find_by_addr(af, &fnh->nexthop);//寻址
-			case FEC_TYPE_PWID:
-				ln1 = lde_nbr_find_by_lsrid(fn->fec.u.pwid.lsr_id);
-				break;
-			default:
-				ln1 = NULL;
-				break;
-		}	
-		if(ln1!=NULL){//与下一跳会话建立，构造fec_node，发送labelmapping
-			fec1 = calloc(1, sizeof(*fec1));
-			if (fec1 == NULL)
-				fatal(__func__);
-			fec1->type=fn->fec.type;
-			if(fec1->type==FEC_TYPE_IPV4){
-				fec1->u.ipv4.prefix=info.root_addr;
-				fec1->u.ipv4.prefixlen=info.ov;
-			}
-			else{
-				free(fec1);
-				return;
-				} 
-			if(fec_find(&ln1->sent_map, fec1)==NULL){
-				fn1 = calloc(1, sizeof(*fn1));
-				if (fn1 == NULL)
-					fatal(__func__);
-				fn1->fec = *fec1;
-				fn1->local_label =lde_assign_label();
-				LIST_INIT(&fn1->upstream);
-				LIST_INIT(&fn1->downstream);
-				LIST_INIT(&fn1->nexthops);
-				label_nbr_add(NO_LABEL,fn1->local_label, ln1->peerid, fec1, STREAM_TYPE_UP);
-				lde_send_labelmapping(ln1, fn1, 1);	
-				free(fn1);
-			}
-			free(fec1);
-		}
-	}*/
-///////////////////////////////////////////////////////////////////////////////////
+
 	switch (fn->fec.type) {
 	case FEC_TYPE_IPV4:
 	case FEC_TYPE_IPV6:
-		ln = lde_nbr_find_by_addr(af, &fnh->nexthop);//寻址
+		ln = lde_nbr_find_by_addr(af, &fnh->nexthop);
+		break;
 	case FEC_TYPE_PWID:
 		ln = lde_nbr_find_by_lsrid(fn->fec.u.pwid.lsr_id);
 		break;
@@ -464,15 +369,14 @@ lde_kernel_insert(struct fec *fec, int af, union ldpd_addr *nexthop,
 
 	if (ln) {
 		/* FEC.2  */
-	
 		me = (struct lde_map *)fec_find(&ln->recv_map, &fn->fec);
-		if (me)//收到过，处理信息
+		if (me)
 			/* FEC.5 */
 			lde_check_mapping(&me->map, ln);
 	}
 }
 
-void 
+void
 lde_kernel_remove(struct fec *fec, int af, union ldpd_addr *nexthop,
     uint8_t priority)
 {
@@ -507,21 +411,16 @@ lde_check_mapping(struct map *map, struct lde_nbr *ln)
 	struct lde_req		*lre;
 	struct lde_map		*me;
 	struct l2vpn_pw		*pw;
-	struct ldpd_global   lg;//读取本机ip
 	int			 msgsource = 0;
 
-	//提取收到的map信息中的fec信息，找到相应的fec_node。如果fec_node不存在则新建一个fec_node
-
 	lde_map2fec(map, ln->id, &fec);
-//	if(!lde_nbr_find_by_addr(fec.type,fec.u.ipv4.prefix))//新添的路由信息不是本机的邻居节点，只为邻居建立fec_node_tree
-	//	return;
 	fn = (struct fec_node *)fec_find(&ft, &fec);
 	if (fn == NULL)
 		fn = fec_add(&fec);
 
 	/* LMp.1: first check if we have a pending request running */
 	lre = (struct lde_req *)fec_find(&ln->sent_req, &fn->fec);
-	if (lre)//lre！=NULL说明发送的请求得到了回应，把相应请求记录删除
+	if (lre)
 		/* LMp.2: delete record of outstanding label request */
 		lde_req_del(ln, lre, 1);
 
@@ -540,7 +439,7 @@ lde_check_mapping(struct map *map, struct lde_nbr *ln)
 		/* LMp.10 */
 		if (me->map.label != map->label && lre == NULL) {
 			/* LMp.10a */
-			lde_send_labelrelease(ln, fn, me->map.label);//新收到的label与以前的label对比，如果不一样更新label
+			lde_send_labelrelease(ln, fn, me->map.label);
 
 			/*
 			 * Can not use lde_nbr_find_by_addr() because there's
@@ -561,7 +460,6 @@ lde_check_mapping(struct map *map, struct lde_nbr *ln)
 	 * LMp.11 - 12: consider multiple nexthops in order to
 	 * support multipath
 	 */
-	 //分发remote_label
 	LIST_FOREACH(fnh, &fn->nexthops, entry) {
 		/* LMp.15: install FEC in FIB */
 		switch (fec.type) {
@@ -601,6 +499,7 @@ lde_check_mapping(struct map *map, struct lde_nbr *ln)
 	if (msgsource == 0)
 		/* LMp.13: just return since we use liberal lbl retention */
 		return;
+
 	/*
 	 * LMp.17 - LMp.27 are unnecessary since we don't need to implement
 	 * loop detection. LMp.28 - LMp.30 are unnecessary because we are
@@ -790,27 +689,20 @@ lde_check_withdraw_wcard(struct map *map, struct lde_nbr *ln)
 	struct fec_node	*fn;
 	struct fec_nh	*fnh;
 	struct lde_map	*me;
-	struct in_addr local;
-	local.s_addr=inet_addr("0.0.0.0");
+
 	/* LWd.2: send label release */
-	printf("a\n");
 	lde_send_labelrelease(ln, NULL, map->label);
-	printf("b\n");
 
 	RB_FOREACH(f, fec_tree, &ft) {
 		fn = (struct fec_node *)f;
-		printf("c addr:%s\n ",inet_ntoa(f->u.ipv4.prefix));
-	//	LIST_FOREACH(fnh, &fn->nexthops, entry)
-		//	if(fnh->nexthop.v4==local)
-			//	break;
-		//if(f->u.ipv4.prefix.s_addr==local.s_addr)
-			//continue;
+
 		/* LWd.1: remove label from forwarding/switching use */
-	/*	LIST_FOREACH(fnh, &fn->nexthops, entry) {
+		LIST_FOREACH(fnh, &fn->nexthops, entry) {
 			switch (f->type) {
 			case FEC_TYPE_IPV4:
 			case FEC_TYPE_IPV6:
-				if (!lde_address_find(ln, fnh->af, &fnh->nexthop))
+				if (!lde_address_find(ln, fnh->af,
+				    &fnh->nexthop))
 					continue;
 				break;
 			case FEC_TYPE_PWID:
@@ -821,19 +713,18 @@ lde_check_withdraw_wcard(struct map *map, struct lde_nbr *ln)
 				break;
 			}
 			lde_send_delete_klabel(fn, fnh);
-			printf("d\n");
 			fnh->remote_label = NO_LABEL;
-		}*/
+		}
 
 		/* LWd.3: check previously received label mapping */
 		me = (struct lde_map *)fec_find(&ln->recv_map, &fn->fec);
-		if (me && (map->label == NO_LABEL || map->label == me->map.label))
+		if (me && (map->label == NO_LABEL ||
+		    map->label == me->map.label))
 			/*
 			 * LWd.4: remove record of previously received
 			 * label mapping
 			 */
 			lde_map_del(ln, me, 0);
-		printf("e\n");
 	}
 }
 
