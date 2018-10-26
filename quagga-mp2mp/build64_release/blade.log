@@ -1,0 +1,18 @@
+Failed to generate scm: /bin/sh: 1: svn: not found
+
+Blade(info): ccache found
+Blade(info): loading BUILDs...
+Blade(info): loading done.
+Blade(info): analyzing dependency graph...
+Blade(info): analyzing done.
+Blade(info): generating build rules...
+Blade(info): CPP=cpp
+Blade(info): CC=gcc
+Blade(info): CXX=g++
+Blade(info): LD=g++
+Blade(info): generating done.
+Blade(info): building...
+Blade(info): tunes the parallel jobs number(-j N) to be 8
+Blade(info): building done.
+Blade(info): success
+Blade(info): cost time is 0:00:00s

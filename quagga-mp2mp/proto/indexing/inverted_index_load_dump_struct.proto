@@ -1,0 +1,13 @@
+syntax = "proto2";
+
+// To make the life easy, this proto is used to load from and
+// dump to a file which stores inverted index. Note that it is
+// stores posting list as a string, so it is up to the class
+// PostingList to determine how to interpret the string.
+
+message InvertedIndexStruct {
+  required string index_type = 1;
+  required string key = 2;
+  required int32 posting_list_len = 3;
+  required string posting_list = 4;
+}

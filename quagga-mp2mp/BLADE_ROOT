@@ -1,0 +1,53 @@
+cc_config(
+    extra_incs = [
+        'index/',
+        'third_party/gflags/include',
+        'third_party/protobuf/include',
+        'third_party/glog/include',
+    ],
+    linkflags = [
+        '-L./third_party/boost/lib/',
+        '-L./third_party/gflags/lib/',
+        '-L./third_party/protobuf/lib',
+        '-L./third_party/glog/lib/',
+    ],
+    warnings = [
+        '-Wall',
+        '-Wno-vla'
+    ],
+    c_warnings = [
+        '-Wall'
+    ],
+    cxxflags = [
+        '-std=c++11',
+        '-g3',
+        '-DDEBUG',
+        '-fPIC',
+        '-D_GNU_SOURCE',
+        '-DGFLAGS_NS=google',
+        '-DPROTOBUF_USE_DLLS',
+        '-DBRPC_WITH_GLOG',
+    ],
+    optimize = '-O3'
+)
+
+cc_binary_config(
+    extra_libs = [
+        '#boost_regex',
+        '#crypto',
+        '#dl',
+        '#pthread',
+        '#ssl',
+        '#protobuf',
+        '#gflags',
+        '#z',
+    ]
+)
+
+proto_library_config(
+    protoc = 'third_party/protobuf/bin/protoc',
+    protobuf_libs = '#protobuf',
+    protobuf_incs = [
+        'third_party/protobuf/include/',
+    ]
+)

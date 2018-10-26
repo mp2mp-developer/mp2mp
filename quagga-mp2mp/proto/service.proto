@@ -1,0 +1,17 @@
+syntax="proto2";
+package qqnews;
+
+option cc_generic_services = true;
+
+message TriggerRequest {
+    required string message = 1;
+};
+
+message TriggerResponse {
+    required uint32 code = 1;
+    optional string error = 2;
+};
+
+service TriggerService {
+	rpc OnTrigger(TriggerRequest) returns (TriggerResponse);
+};

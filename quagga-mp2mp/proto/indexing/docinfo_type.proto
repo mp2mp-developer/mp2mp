@@ -1,0 +1,8 @@
+syntax = "proto2";
+
+enum DocType {
+  ARTICLENEWS = 0;
+  SHORTVIDEO = 1;
+
+  UNKNOWN = 100;
+}
