@@ -35,6 +35,7 @@ extern struct zebra_privs_t	 ldpe_privs;
 int
 ldp_create_socket(int af, enum socket_type type)
 {
+    log_notice("ldp_create_socket, af :%d, enum socket_type: %d", af, type);
 	int			 fd, domain, proto;
 	union ldpd_addr		 addr;
 	struct sockaddr_storage	 local_sa;

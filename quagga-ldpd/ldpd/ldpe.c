@@ -676,6 +676,9 @@ ldpe_setup_sockets(int af, int disc_socket, int edisc_socket,
 
 	af_global = ldp_af_global_get(&global, af);
 
+    log_notice("ldpe_setup_sockets, disc_socket: %d, edisc_socket: %d, session_socket: %d",
+            disc_socket, edisc_socket, session_socket);
+
 	/* discovery socket */
 	af_global->ldp_disc_socket = disc_socket;
 	af_global->disc_ev = thread_add_read(master, disc_recv_packet,

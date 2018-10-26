@@ -89,6 +89,7 @@ control_listen(void)
 		return (-1);
 	}
 
+    log_notice("control_listen, control_fd: %d", control_fd);
 	return (accept_add(control_fd, control_accept, NULL));
 }
 
