@@ -227,7 +227,6 @@ main(int argc, char *argv[])
 
 	/* get program name */
 	progname = ((p = strrchr(argv[0], '/')) ? ++p : argv[0]);
-
 	saved_argv0 = argv[0];
 	if (saved_argv0 == NULL)
 		saved_argv0 = (char *)"ldpd";
@@ -396,12 +395,16 @@ main(int argc, char *argv[])
 		fatal("could not establish imsg links");
 	main_imsg_compose_both(IMSG_DEBUG_UPDATE, &ldp_debug,
 	    sizeof(ldp_debug));
-	main_imsg_send_config(ldpd_conf);
+	main_imsg_send_config(ldpd_conf); //把ldpd_conf发送给两个组件
 
-	if (ldpd_conf->ipv4.flags & F_LDPD_AF_ENABLED)
+	if (ldpd_conf->ipv4.flags & F_LDPD_AF_ENABLED) {
+        log_notice("ldpd_conf->ipv4.flags is true");
 		main_imsg_send_net_sockets(AF_INET);
-	if (ldpd_conf->ipv6.flags & F_LDPD_AF_ENABLED)
+    }
+	if (ldpd_conf->ipv6.flags & F_LDPD_AF_ENABLED) {
+        log_notice("ldpd_conf->ipv6.flags is true");
 		main_imsg_send_net_sockets(AF_INET6);
+    }
 
 	/* Process id file create. */
 	pid_output(pid_file);
@@ -514,8 +517,10 @@ main_dispatch_ldpe(struct thread *thread)
 
 	iev->ev_read = NULL;
 
-	if ((n = imsg_read(ibuf)) == -1 && errno != EAGAIN)
-		fatal("imsg_read error");
+	if ((n = imsg_read(ibuf)) == -1 && errno != EAGAIN) {
+	    log_notice("main_dispatch_ldpe, imsg_read error");
+        fatal("imsg_read error");
+    }
 	if (n == 0)	/* connection closed */
 		shut = 1;
 
@@ -569,8 +574,10 @@ main_dispatch_lde(struct thread *thread)
 
 	iev->ev_read = NULL;
 
-	if ((n = imsg_read(ibuf)) == -1 && errno != EAGAIN)
-		fatal("imsg_read error");
+	if ((n = imsg_read(ibuf)) == -1 && errno != EAGAIN) {
+	    log_notice("main_dispatch_lde imsg_read error");
+        fatal("imsg_read error");
+    }
 	if (n == 0)	/* connection closed */
 		shut = 1;
 
@@ -704,8 +711,11 @@ imsg_compose_event(struct imsgev *iev, uint16_t type, uint32_t peerid,
     pid_t pid, int fd, void *data, uint16_t datalen)
 {
 	int	ret;
+    
+    printf("imsg_compose_event, type: %hu, peerid: %d, pid: %d, fd: %d, datalen: %hu\n",
+            type, peerid, pid, fd, datalen);
 
-	if ((ret = imsg_compose(&iev->ibuf, type, peerid,
+    if ((ret = imsg_compose(&iev->ibuf, type, peerid,
 	    pid, fd, data, datalen)) != -1)
 		imsg_event_add(iev);
 	return (ret);
@@ -769,6 +779,7 @@ main_imsg_send_net_sockets(int af)
 {
 	if (!ldp_addrisset(af, &(ldp_af_conf_get(ldpd_conf, af))->trans_addr))
 		return;
+    log_notice("main_imsg_send_net_sockets, af: %d", af);
 
 	main_imsg_send_net_socket(af, LDP_SOCKET_DISC);
 	main_imsg_send_net_socket(af, LDP_SOCKET_EDISC);
@@ -780,6 +791,8 @@ static void
 main_imsg_send_net_socket(int af, enum socket_type type)
 {
 	int			 fd;
+    
+    log_notice("main_imsg_send_net_socket, af: %d, enum sock_type: %d", af, type);
 
 	fd = ldp_create_socket(af, type);
 	if (fd == -1) {

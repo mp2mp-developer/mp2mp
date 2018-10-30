@@ -261,10 +261,23 @@ kif_redistribute(const char *ifname)
 			continue;
 
 		ifp2kif(ifp, &kif);
+        //debug start
+        printf("kif_redistribute, kif.ifname:");
+        for (int i = 0; i < IF_NAMESIZE; i++) {
+            printf("%c", kif.ifname[i]);
+        }
+        printf(", ");
+        printf("kif.ifindex: %u, kif.flags: %d, kif.mtu: %d\n", kif.ifindex, kif.flags, kif.mtu);
+        //debug end
 		main_imsg_compose_ldpe(IMSG_IFSTATUS, 0, &kif, sizeof(kif));
 
 		for (ALL_LIST_ELEMENTS_RO(ifp->connected, cnode, ifc)) {
 			ifc2kaddr(ifp, ifc, &ka);
+            //debug start
+            int tmplen = ka.prefixlen;
+            printf("kif_redistribute, ka.ifindex: %u, ka.af: %d, ka.addr: %s, ka.prefixlen: %d, ka.dstbrd: %s\n",
+                    ka.ifindex, ka.af, inet_ntoa(ka.addr.v4), tmplen, inet_ntoa(ka.dstbrd.v4));
+            //debug end
 			main_imsg_compose_ldpe(IMSG_NEWADDR, 0, &ka,
 			    sizeof(ka));
 		}
@@ -285,6 +298,9 @@ ldp_router_id_update(int command, struct zclient *zclient, zebra_size_t length,
 	debug_zebra_in("router-id update %s", inet_ntoa(router_id.u.prefix4));
 
 	global.rtr_id.s_addr = router_id.u.prefix4.s_addr;
+    //debug start
+    printf("ldp_router_id_update, global.rtr_id: %s\n", inet_ntoa(global.rtr_id));
+    //debug end
 	main_imsg_compose_ldpe(IMSG_RTRID_UPDATE, 0, &global.rtr_id,
 	    sizeof(global.rtr_id));
 
@@ -303,6 +319,15 @@ ldp_interface_add(int command, struct zclient *zclient, zebra_size_t length,
 	    ifp->ifindex, ifp->mtu);
 
 	ifp2kif(ifp, &kif);
+    //debug start
+    printf("ldp_interface_add, kif.ifname:");
+    for (int i = 0; i < IF_NAMESIZE; i++) {
+        printf("%c", kif.ifname[i]);
+    }
+    printf(", ");
+    printf("kif.ifindex: %u, kif.flags: %d, kif.mtu: %d\n", kif.ifindex, kif.flags, kif.mtu);
+    //debug end
+
 	main_imsg_compose_ldpe(IMSG_IFSTATUS, 0, &kif, sizeof(kif));
 
 	return (0);
@@ -351,19 +376,40 @@ ldp_interface_status_change(int command, struct zclient *zclient,
 	debug_zebra_in("interface %s state update", ifp->name);
 
 	ifp2kif(ifp, &kif);
+    //debug start
+    printf("ldp_interface_status_change, kif.ifname:");
+    for (int i = 0; i < IF_NAMESIZE; i++) {
+        printf("%c", kif.ifname[i]);
+    }
+    printf(", ");
+    printf("kif.ifindex: %u, kif.flags: %d, kif.mtu: %d\n", kif.ifindex, kif.flags, kif.mtu);
+    //debug end
+
 	main_imsg_compose_ldpe(IMSG_IFSTATUS, 0, &kif, sizeof(kif));
 
 	link_new = (ifp->flags & IFF_UP) && (ifp->flags & IFF_RUNNING);
 	if (link_new) {
 		for (ALL_LIST_ELEMENTS_RO(ifp->connected, node, ifc)) {
 			ifc2kaddr(ifp, ifc, &ka);
+            //debug start
+            int tmplen = ka.prefixlen;
+            printf("ldp_interface_status_change, ka.ifindex: %u, ka.af: %d, ka.addr: %s, ka.prefixlen: %d, ka.dstbrd: %s\n",
+                    ka.ifindex, ka.af, inet_ntoa(ka.addr.v4), tmplen, inet_ntoa(ka.dstbrd.v4));
+            //debug end
+
 			main_imsg_compose_ldpe(IMSG_NEWADDR, 0, &ka,
 			    sizeof(ka));
 		}
 	} else {
 		for (ALL_LIST_ELEMENTS_RO(ifp->connected, node, ifc)) {
 			ifc2kaddr(ifp, ifc, &ka);
-			main_imsg_compose_ldpe(IMSG_DELADDR, 0, &ka,
+            //debug start
+            int tmplen = ka.prefixlen;
+            printf("ldp_interface_status_change, ka.ifindex: %u, ka.af: %d, ka.addr: %s, ka.prefixlen: %d, ka.dstbrd: %s\n",
+                    ka.ifindex, ka.af, inet_ntoa(ka.addr.v4), tmplen, inet_ntoa(ka.dstbrd.v4));
+            //debug end
+
+            main_imsg_compose_ldpe(IMSG_DELADDR, 0, &ka,
 			    sizeof(ka));
 		}
 	}
@@ -394,7 +440,13 @@ ldp_interface_address_add(int command, struct zclient *zclient,
 	    ka.prefixlen);
 
 	/* notify ldpe about new address */
-	main_imsg_compose_ldpe(IMSG_NEWADDR, 0, &ka, sizeof(ka));
+    //debug start
+    int tmplen = ka.prefixlen;
+    printf("ldp_interface_address_add, ka.ifindex: %u, ka.af: %d, ka.addr: %s, ka.prefixlen: %d, ka.dstbrd: %s\n",
+            ka.ifindex, ka.af, inet_ntoa(ka.addr.v4), tmplen, inet_ntoa(ka.dstbrd.v4));
+    //debug end
+
+    main_imsg_compose_ldpe(IMSG_NEWADDR, 0, &ka, sizeof(ka));
 
 	return (0);
 }
@@ -423,8 +475,13 @@ ldp_interface_address_delete(int command, struct zclient *zclient,
 	    ka.prefixlen);
 
 	/* notify ldpe about removed address */
-	main_imsg_compose_ldpe(IMSG_DELADDR, 0, &ka, sizeof(ka));
+    //debug start
+    int tmplen = ka.prefixlen;
+    printf("ldp_interface_address_delete, ka.ifindex: %u, ka.af: %d, ka.addr: %s, ka.prefixlen: %d, ka.dstbrd: %s\n",
+            ka.ifindex, ka.af, inet_ntoa(ka.addr.v4), tmplen, inet_ntoa(ka.dstbrd.v4));
+    //debug end
 
+    main_imsg_compose_ldpe(IMSG_DELADDR, 0, &ka, sizeof(ka));
 	return (0);
 }
 
@@ -509,14 +566,31 @@ ldp_zebra_read_route(int command, struct zclient *zclient, zebra_size_t length,
 		debug_zebra_in("route add %s/%d nexthop %s (%s)",
 		    log_addr(kr.af, &kr.prefix), kr.prefixlen,
 		    log_addr(kr.af, &kr.nexthop), zebra_route_string(type));
-		main_imsg_compose_lde(IMSG_NETWORK_ADD, 0, &kr, sizeof(kr));
+        //debug start
+        int tmplen = kr.prefixlen;
+        int tmppriority = kr.priority;
+        printf("main_imsg_compose_lde, ZEBRA_IPV4_ROUTE_ADD, kr.af: %d, kr.prefix: %s, kr.prefixlen, %d, kr.nexthop: %s, \
+                kr.local_label: %d, kr.remote_label: %d, kr.ifindex: %u, kr.priority: %d, kr.flags: %hu",
+                kr.af, inet_ntoa(kr.prefix.v4), tmplen, inet_ntoa(kr.nexthop.v4), kr.local_label, kr.remote_label,
+                kr.ifindex, tmppriority, kr.flags);
+        //debug end
+        main_imsg_compose_lde(IMSG_NETWORK_ADD, 0, &kr, sizeof(kr));
 		break;
 	case ZEBRA_IPV4_ROUTE_DELETE:
 	case ZEBRA_IPV6_ROUTE_DELETE:
 		debug_zebra_in("route delete %s/%d nexthop %s (%s)",
 		    log_addr(kr.af, &kr.prefix), kr.prefixlen,
 		    log_addr(kr.af, &kr.nexthop), zebra_route_string(type));
-		main_imsg_compose_lde(IMSG_NETWORK_DEL, 0, &kr, sizeof(kr));
+        //debug start
+        int tmplen1 = kr.prefixlen;
+        int tmppriority1 = kr.priority;
+        printf("main_imsg_compose_lde, ZEBRA_IPV4_ROUTE_DELETE, kr.af: %d, kr.prefix: %s, kr.prefixlen, %d, kr.nexthop: %s, \
+                kr.local_label: %d, kr.remote_label: %d, kr.ifindex: %u, kr.priority: %d, kr.flags: %hu",
+                kr.af, inet_ntoa(kr.prefix.v4), tmplen1, inet_ntoa(kr.nexthop.v4), kr.local_label, kr.remote_label,
+                kr.ifindex, tmppriority1, kr.flags);
+        //debug end
+
+        main_imsg_compose_lde(IMSG_NETWORK_DEL, 0, &kr, sizeof(kr));
 		break;
 	default:
 		fatalx("ldp_zebra_read_route: unknown command");
