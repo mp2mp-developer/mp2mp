@@ -424,6 +424,8 @@ ldp_vty_dispatch(struct vty *vty, struct imsgbuf *ibuf, enum show_command cmd,
 	struct imsg		 imsg;
 	int			 n, done = 0;
 
+    printf("%s\n", __func__);
+
 	while (ibuf->w.queued)
 		if (msgbuf_write(&ibuf->w) <= 0 && errno != EAGAIN) {
 			log_warn("write error");
@@ -506,6 +508,8 @@ ldp_vty_show_binding(struct vty *vty, struct vty_arg *args[])
 	struct show_filter	 filter;
 	const char		*af_str;
 	int			 af;
+
+    printf("%s\n", __func__);
 
 	if (ldp_vty_connect(&ibuf) < 0)
 		return (CMD_WARNING);

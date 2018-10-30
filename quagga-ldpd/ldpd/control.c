@@ -197,6 +197,8 @@ control_dispatch_imsg(struct thread *thread)
 	ssize_t		 n;
 	unsigned int	 ifidx;
 
+    printf("%s\n", __func__);
+
 	if ((c = control_connbyfd(fd)) == NULL) {
 		log_warnx("%s: fd %d: not found", __func__, fd);
 		return (0);
@@ -243,7 +245,8 @@ control_dispatch_imsg(struct thread *thread)
 		case IMSG_CTL_SHOW_LIB:
 		case IMSG_CTL_SHOW_L2VPN_PW:
 		case IMSG_CTL_SHOW_L2VPN_BINDING:
-			c->iev.ibuf.pid = imsg.hdr.pid;
+	        printf("%s, IMSG_CTL_SHOW_LIB, IMSG_CTL_SHOW_L2VPN_PW, IMSG_CTL_SHOW_L2VPN_BINDING\n", __func__);
+            c->iev.ibuf.pid = imsg.hdr.pid;
 			ldpe_imsg_compose_lde(imsg.hdr.type, 0, imsg.hdr.pid,
 			    imsg.data, imsg.hdr.len - IMSG_HEADER_SIZE);
 			break;
@@ -277,6 +280,8 @@ int
 control_imsg_relay(struct imsg *imsg)
 {
 	struct ctl_conn	*c;
+
+    printf("%s\n", __func__);
 
 	if ((c = control_connbypid(imsg->hdr.pid)) == NULL)
 		return (0);

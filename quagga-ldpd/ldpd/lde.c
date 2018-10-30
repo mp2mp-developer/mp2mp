@@ -185,7 +185,8 @@ int
 lde_imsg_compose_ldpe(int type, uint32_t peerid, pid_t pid, void *data,
     uint16_t datalen)
 {
-	return (imsg_compose_event(iev_ldpe, type, peerid, pid,
+    printf("%s, type: %d, peerid: %d, pid: %d, datalen: %hu\n", __func__, type, peerid, pid, datalen);
+    return (imsg_compose_event(iev_ldpe, type, peerid, pid,
 	     -1, data, datalen));
 }
 
@@ -335,6 +336,7 @@ lde_dispatch_imsg(struct thread *thread)
 			lde_nbr_del(lde_nbr_find(imsg.hdr.peerid));
 			break;
 		case IMSG_CTL_SHOW_LIB:
+            printf("%s, IMSG_CTL_SHOW_LIB\n", __func__);
 			rt_dump(imsg.hdr.pid);
 
 			lde_imsg_compose_ldpe(IMSG_CTL_END, 0,

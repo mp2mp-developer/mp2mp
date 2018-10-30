@@ -156,6 +156,7 @@ rt_dump(pid_t pid)
 	struct lde_map		*me;
 	static struct ctl_rt	 rtctl;
 
+    printf("%s, pid: %d\n", __func__, pid);
 	RB_FOREACH(f, fec_tree, &ft) {
 		fn = (struct fec_node *)f;
 		if (fn->local_label == NO_LABEL &&

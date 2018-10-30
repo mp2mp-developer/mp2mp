@@ -626,7 +626,8 @@ ldpe_dispatch_lde(struct thread *thread)
 		case IMSG_CTL_SHOW_LIB:
 		case IMSG_CTL_SHOW_L2VPN_PW:
 		case IMSG_CTL_SHOW_L2VPN_BINDING:
-			control_imsg_relay(&imsg);
+            printf("%s, IMSG_CTL_END, IMSG_CTL_SHOW_LIB, IMSG_CTL_SHOW_L2VPN_PW, IMSG_CTL_SHOW_L2VPN_BINDING\n", __func__);
+            control_imsg_relay(&imsg);
 			break;
 		default:
 			log_debug("ldpe_dispatch_lde: error handling imsg %d",
