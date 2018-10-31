@@ -158,6 +158,9 @@ int		 fec_insert(struct fec_tree *, struct fec *);
 int		 fec_remove(struct fec_tree *, struct fec *);
 void		 fec_clear(struct fec_tree *, void (*)(void *));
 void		 rt_dump(pid_t);
+void		 mp2mp_uscb_dump(pid_t);
+void		 mp2mp_dscb_dump(pid_t);
+void		 mp2mp_lsp_dump(pid_t);
 void		 fec_snap(struct lde_nbr *);
 void		 fec_tree_clear(void);
 struct fec_nh	*fec_nh_find(struct fec_node *, int, union ldpd_addr *,

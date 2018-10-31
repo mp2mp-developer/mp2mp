@@ -95,7 +95,7 @@ zebra_send_mpls_lsp(u_char cmd, struct zclient *zclient, int af,
     union ldpd_addr *nexthop, mpls_label_t in_label, mpls_label_t out_label)
 {
 	struct stream		*s;
-
+    printf("%s\n", __func__);
 	debug_zebra_out("ILM %s label %s -> nexthop %s label %s",
 	    (cmd == ZEBRA_MPLS_LSP_ADD) ? "add" : "delete", log_label(in_label),
 	    log_addr(af, nexthop), log_label(out_label));
@@ -139,6 +139,7 @@ zebra_send_mpls_ftn(int delete, struct zclient *zclient, int af,
 	struct in_addr		*nexthop4;
 	struct in6_addr		*nexthop6;
 
+    printf("%s\n", __func__);
 	debug_zebra_out("FTN %s %s/%d nexthop %s label %s",
 	    (delete) ? "delete" : "add", log_addr(af, prefix), prefixlen,
 	    log_addr(af, nexthop), log_label(label));
@@ -290,6 +291,7 @@ ldp_router_id_update(int command, struct zclient *zclient, zebra_size_t length,
 {
 	struct prefix	 router_id;
 
+    printf("%s, command: %d\n", __func__, command);    
 	zebra_router_id_update_read(zclient->ibuf, &router_id);
 
 	if (bad_addr_v4(router_id.u.prefix4))
@@ -313,6 +315,8 @@ ldp_interface_add(int command, struct zclient *zclient, zebra_size_t length,
 {
 	struct interface	*ifp;
 	struct kif		 kif;
+    
+    printf("%s, command: %d\n", __func__, command);    
 
 	ifp = zebra_interface_add_read(zclient->ibuf, vrf_id);
 	debug_zebra_in("interface add %s index %d mtu %d", ifp->name,
@@ -339,6 +343,7 @@ ldp_interface_delete(int command, struct zclient *zclient, zebra_size_t length,
 {
 	struct interface	*ifp;
 
+    printf("%s, command: %d\n", __func__, command);    
 	/* zebra_interface_state_read() updates interface structure in iflist */
 	ifp = zebra_interface_state_read(zclient->ibuf, vrf_id);
 	if (ifp == NULL)
@@ -365,6 +370,7 @@ ldp_interface_status_change(int command, struct zclient *zclient,
 	struct kaddr		 ka;
 	int			 link_new;
 
+    printf("%s, command: %d\n", __func__, command);    
 	/*
 	 * zebra_interface_state_read() updates interface structure in
 	 * iflist.
@@ -425,7 +431,9 @@ ldp_interface_address_add(int command, struct zclient *zclient,
 	struct interface	*ifp;
 	struct kaddr		 ka;
 
-	ifc = zebra_interface_address_read(command, zclient->ibuf, vrf_id);
+    printf("%s, command: %d\n", __func__, command);    
+
+    ifc = zebra_interface_address_read(command, zclient->ibuf, vrf_id);
 	if (ifc == NULL)
 		return (0);
 
@@ -455,10 +463,11 @@ static int
 ldp_interface_address_delete(int command, struct zclient *zclient,
     zebra_size_t length, vrf_id_t vrf_id)
 {
-	struct connected	*ifc;
+    struct connected	*ifc;
 	struct interface	*ifp;
 	struct kaddr		 ka;
 
+    printf("%s, command: %d\n", __func__, command);    
 	ifc = zebra_interface_address_read(command, zclient->ibuf, vrf_id);
 	if (ifc == NULL)
 		return (0);
@@ -494,6 +503,7 @@ ldp_zebra_read_route(int command, struct zclient *zclient, zebra_size_t length,
 	u_char			 flags, message_flags;
 	struct kroute		 kr;
 
+    printf("%s, command: %d\n", __func__, command);    
 	memset(&kr, 0, sizeof(kr));
 	s = zclient->ibuf;
 
@@ -604,6 +614,7 @@ ldp_zebra_connected(struct zclient *zclient)
 {
 	int	i;
 
+    printf("%s\n", __func__);    
 	zclient_send_requests(zclient, VRF_DEFAULT);
 
 	for (i = 0; i < ZEBRA_ROUTE_MAX; i++) {

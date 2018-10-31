@@ -271,6 +271,11 @@
   </tree>
 
   <!-- exec mode commands -->
+  <subtree name="mp2mp_show_af">
+    <option name="uscb" help="mp2mp uscb information" function="ldp_vty_show_mp2mp_uscb"/>
+    <option name="dscb" help="mp2mp uscb information" function="ldp_vty_show_mp2mp_dscb"/>
+    <option name="lsp" help="mp2mp lsp information" function="ldp_vty_show_mp2mp_lsp"/>
+  </subtree>
   <subtree name="ldp_show_af">
     <option name="binding" help="Label Information Base (LIB) information" function="ldp_vty_show_binding"/>
     <option name="discovery" help="Discovery Hello Information" function="ldp_vty_show_discovery"/>
@@ -286,7 +291,10 @@
             <include subtree="ldp_show_af"/>
           </select>
         </option>
-      </option>
+        <option name="mp2mp" help="Label Distribution Protocol : mp2mp">
+          <include subtree="mp2mp_show_af"/>
+        </option>
+    </option>
       <option name="l2vpn" help="Show information about Layer2 VPN">
         <option name="atom" help="Show Any Transport over MPLS information">
           <option name="binding" help="Show AToM label binding information" function="ldp_vty_show_atom_binding"/>

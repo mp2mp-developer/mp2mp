@@ -1189,6 +1189,42 @@ DEFUN (ldp_show_mpls_ldp_address_family_interface,
   return ldp_vty_show_interface (vty, args);
 }
 
+DEFUN (ldp_show_mpls_mp2mp_uscb,
+       ldp_show_mpls_mp2mp_uscb_cmd,
+       "show mpls mp2mp uscb",
+       "Show running system information\n"
+       "MPLS information\n"
+       "Label Distribution Protocol : mp2mp\n"
+       "mp2mp uscb information\n")
+{
+  struct vty_arg *args[] = { NULL };
+  return ldp_vty_show_mp2mp_uscb (vty, args);
+}
+
+DEFUN (ldp_show_mpls_mp2mp_dscb,
+       ldp_show_mpls_mp2mp_dscb_cmd,
+       "show mpls mp2mp dscb",
+       "Show running system information\n"
+       "MPLS information\n"
+       "Label Distribution Protocol : mp2mp\n"
+       "mp2mp uscb information\n")
+{
+  struct vty_arg *args[] = { NULL };
+  return ldp_vty_show_mp2mp_dscb (vty, args);
+}
+
+DEFUN (ldp_show_mpls_mp2mp_lsp,
+       ldp_show_mpls_mp2mp_lsp_cmd,
+       "show mpls mp2mp lsp",
+       "Show running system information\n"
+       "MPLS information\n"
+       "Label Distribution Protocol : mp2mp\n"
+       "mp2mp lsp information\n")
+{
+  struct vty_arg *args[] = { NULL };
+  return ldp_vty_show_mp2mp_lsp (vty, args);
+}
+
 DEFUN (ldp_show_l2vpn_atom_binding,
        ldp_show_l2vpn_atom_binding_cmd,
        "show l2vpn atom binding",
@@ -1702,6 +1738,9 @@ ldp_vty_init (void)
   install_element (ENABLE_NODE, &ldp_show_mpls_ldp_address_family_binding_cmd);
   install_element (ENABLE_NODE, &ldp_show_mpls_ldp_address_family_discovery_cmd);
   install_element (ENABLE_NODE, &ldp_show_mpls_ldp_address_family_interface_cmd);
+  install_element (ENABLE_NODE, &ldp_show_mpls_mp2mp_uscb_cmd);
+  install_element (ENABLE_NODE, &ldp_show_mpls_mp2mp_dscb_cmd);
+  install_element (ENABLE_NODE, &ldp_show_mpls_mp2mp_lsp_cmd);
   install_element (ENABLE_NODE, &ldp_show_l2vpn_atom_binding_cmd);
   install_element (ENABLE_NODE, &ldp_show_l2vpn_atom_vc_cmd);
   install_element (ENABLE_NODE, &ldp_show_debugging_mpls_ldp_cmd);
@@ -1730,6 +1769,9 @@ ldp_vty_init (void)
   install_element (VIEW_NODE, &ldp_show_mpls_ldp_address_family_binding_cmd);
   install_element (VIEW_NODE, &ldp_show_mpls_ldp_address_family_discovery_cmd);
   install_element (VIEW_NODE, &ldp_show_mpls_ldp_address_family_interface_cmd);
+  install_element (VIEW_NODE, &ldp_show_mpls_mp2mp_uscb_cmd);
+  install_element (VIEW_NODE, &ldp_show_mpls_mp2mp_dscb_cmd);
+  install_element (VIEW_NODE, &ldp_show_mpls_mp2mp_lsp_cmd);
   install_element (VIEW_NODE, &ldp_show_l2vpn_atom_binding_cmd);
   install_element (VIEW_NODE, &ldp_show_l2vpn_atom_vc_cmd);
   install_element (VIEW_NODE, &ldp_show_debugging_mpls_ldp_cmd);

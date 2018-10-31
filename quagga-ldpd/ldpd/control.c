@@ -197,7 +197,6 @@ control_dispatch_imsg(struct thread *thread)
 	ssize_t		 n;
 	unsigned int	 ifidx;
 
-    printf("%s\n", __func__);
 
 	if ((c = control_connbyfd(fd)) == NULL) {
 		log_warnx("%s: fd %d: not found", __func__, fd);
@@ -251,6 +250,7 @@ control_dispatch_imsg(struct thread *thread)
 			    imsg.data, imsg.hdr.len - IMSG_HEADER_SIZE);
 			break;
 		case IMSG_CTL_SHOW_NBR:
+            printf("%s, IMSG_CTL_SHOW_NBR\n", __func__);
 			ldpe_nbr_ctl(c);
 			break;
 		case IMSG_CTL_CLEAR_NBR:
@@ -263,6 +263,14 @@ control_dispatch_imsg(struct thread *thread)
 		case IMSG_CTL_LOG_VERBOSE:
 			/* ignore */
 			break;
+        case IMSG_CTL_SHOW_MP2MP_USCB:
+        case IMSG_CTL_SHOW_MP2MP_LSP:
+        case IMSG_CTL_SHOW_MP2MP_DSCB:
+            printf("%s, msg_type: %d\n", __func__, imsg.hdr.type);
+            c->iev.ibuf.pid = imsg.hdr.pid;
+			ldpe_imsg_compose_lde(imsg.hdr.type, 0, imsg.hdr.pid,
+			    imsg.data, imsg.hdr.len - IMSG_HEADER_SIZE);
+           break;
 		default:
 			log_debug("%s: error handling imsg %d", __func__,
 			    imsg.hdr.type);

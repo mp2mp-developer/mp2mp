@@ -342,7 +342,28 @@ lde_dispatch_imsg(struct thread *thread)
 			lde_imsg_compose_ldpe(IMSG_CTL_END, 0,
 			    imsg.hdr.pid, NULL, 0);
 			break;
-		case IMSG_CTL_SHOW_L2VPN_PW:
+        case IMSG_CTL_SHOW_MP2MP_USCB:
+            printf("%s, IMSG_CTL_SHOW_MP2MP_USCB\n", __func__);
+            mp2mp_uscb_dump(imsg.hdr.pid);
+
+            lde_imsg_compose_ldpe(IMSG_CTL_END, 0,
+                    imsg.hdr.pid, NULL, 0);
+            break;
+        case IMSG_CTL_SHOW_MP2MP_DSCB:
+            printf("%s, IMSG_CTL_SHOW_MP2MP_DSCB\n", __func__);
+            mp2mp_dscb_dump(imsg.hdr.pid);
+
+            lde_imsg_compose_ldpe(IMSG_CTL_END, 0,
+                    imsg.hdr.pid, NULL, 0);
+            break;
+        case IMSG_CTL_SHOW_MP2MP_LSP:
+            printf("%s, IMSG_CTL_SHOW_MP2MP_LSP\n", __func__);
+            mp2mp_lsp_dump(imsg.hdr.pid);
+
+            lde_imsg_compose_ldpe(IMSG_CTL_END, 0,
+                    imsg.hdr.pid, NULL, 0);
+            break;
+        case IMSG_CTL_SHOW_L2VPN_PW:
 			l2vpn_pw_ctl(imsg.hdr.pid);
 
 			lde_imsg_compose_ldpe(IMSG_CTL_END, 0,

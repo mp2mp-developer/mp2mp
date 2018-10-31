@@ -38,7 +38,10 @@ enum show_command {
 	SHOW_NBR,
 	SHOW_LIB,
 	SHOW_L2VPN_PW,
-	SHOW_L2VPN_BINDING
+	SHOW_L2VPN_BINDING,
+    SHOW_MP2MP_USCB,
+    SHOW_MP2MP_DSCB,
+    SHOW_MP2MP_LSP
 };
 
 struct show_filter {
@@ -66,6 +69,9 @@ static int		 ldp_vty_connect(struct imsgbuf *);
 static int		 ldp_vty_dispatch(struct vty *, struct imsgbuf *,
 			    enum show_command, struct show_filter *);
 static int		 ldp_vty_get_af(const char *, int *);
+static int      show_mp2mp_uscb_msg(struct vty *vty, struct imsg *imsg);
+static int      show_mp2mp_dscb_msg(struct vty *vty, struct imsg *imsg);
+static int      show_mp2mp_lsp_msg(struct vty *vty, struct imsg *imsg);
 
 static int
 show_interface_msg(struct vty *vty, struct imsg *imsg,
@@ -424,7 +430,6 @@ ldp_vty_dispatch(struct vty *vty, struct imsgbuf *ibuf, enum show_command cmd,
 	struct imsg		 imsg;
 	int			 n, done = 0;
 
-    printf("%s\n", __func__);
 
 	while (ibuf->w.queued)
 		if (msgbuf_write(&ibuf->w) <= 0 && errno != EAGAIN) {
@@ -464,6 +469,7 @@ ldp_vty_dispatch(struct vty *vty, struct imsgbuf *ibuf, enum show_command cmd,
 				done = show_nbr_msg(vty, &imsg, filter);
 				break;
 			case SHOW_LIB:
+                printf("%s, SHOW_LIB\n", __func__);
 				done = show_lib_msg(vty, &imsg, filter);
 				break;
 			case SHOW_L2VPN_PW:
@@ -472,6 +478,18 @@ ldp_vty_dispatch(struct vty *vty, struct imsgbuf *ibuf, enum show_command cmd,
 			case SHOW_L2VPN_BINDING:
 				done = show_l2vpn_binding_msg(vty, &imsg);
 				break;
+            case SHOW_MP2MP_USCB:
+                printf("%s, SHOW_MP2MP_USCB\n", __func__);
+                done = show_mp2mp_uscb_msg(vty, &imsg);
+                break;
+            case SHOW_MP2MP_DSCB:
+                printf("%s, SHOW_MP2MP_DSCB\n", __func__);
+                done = show_mp2mp_dscb_msg(vty, &imsg);
+                break;
+            case SHOW_MP2MP_LSP:
+                printf("%s, SHOW_MP2MP_LSP\n", __func__);
+                done = show_mp2mp_lsp_msg(vty, &imsg);
+                break;
 			default:
 				break;
 			}
@@ -596,6 +614,60 @@ ldp_vty_show_neighbor(struct vty *vty, struct vty_arg *args[])
 }
 
 int
+ldp_vty_show_mp2mp_uscb(struct vty *vty, struct vty_arg *args[])
+{
+    printf("%s\n", __func__);
+	struct imsgbuf		 ibuf;
+	struct show_filter	 filter;
+
+	if (ldp_vty_connect(&ibuf) < 0)
+		return (CMD_WARNING);
+
+	imsg_compose(&ibuf, IMSG_CTL_SHOW_MP2MP_USCB, 0, 0, -1, NULL, 0);
+
+	/* not used */
+	memset(&filter, 0, sizeof(filter));
+
+	return (ldp_vty_dispatch(vty, &ibuf, SHOW_MP2MP_USCB, &filter));
+}
+
+int
+ldp_vty_show_mp2mp_dscb(struct vty *vty, struct vty_arg *args[])
+{
+    printf("%s\n", __func__);
+ 	struct imsgbuf		 ibuf;
+	struct show_filter	 filter;
+
+	if (ldp_vty_connect(&ibuf) < 0)
+		return (CMD_WARNING);
+
+	imsg_compose(&ibuf, IMSG_CTL_SHOW_MP2MP_DSCB, 0, 0, -1, NULL, 0);
+
+	/* not used */
+	memset(&filter, 0, sizeof(filter));
+
+	return (ldp_vty_dispatch(vty, &ibuf, SHOW_MP2MP_DSCB, &filter));
+}
+
+int
+ldp_vty_show_mp2mp_lsp(struct vty *vty, struct vty_arg *args[])
+{
+    printf("%s\n", __func__);
+ 	struct imsgbuf		 ibuf;
+	struct show_filter	 filter;
+
+	if (ldp_vty_connect(&ibuf) < 0)
+		return (CMD_WARNING);
+
+	imsg_compose(&ibuf, IMSG_CTL_SHOW_MP2MP_LSP, 0, 0, -1, NULL, 0);
+
+	/* not used */
+	memset(&filter, 0, sizeof(filter));
+
+	return (ldp_vty_dispatch(vty, &ibuf, SHOW_MP2MP_LSP, &filter));
+}
+
+int
 ldp_vty_show_atom_binding(struct vty *vty, struct vty_arg *args[])
 {
 	struct imsgbuf		 ibuf;
@@ -668,4 +740,25 @@ ldp_vty_clear_nbr(struct vty *vty, struct vty_arg *args[])
 	close(ibuf.fd);
 
 	return (CMD_SUCCESS);
+}
+
+static int
+show_mp2mp_uscb_msg(struct vty *vty, struct imsg *imsg)
+{
+    printf("%s\n", __func__);
+    return (1);
+}
+
+static int
+show_mp2mp_dscb_msg(struct vty *vty, struct imsg *imsg)
+{
+    printf("%s\n", __func__);
+    return (1);
+}
+
+static int
+show_mp2mp_lsp_msg(struct vty *vty, struct imsg *imsg)
+{
+    printf("%s\n", __func__);
+    return (1);
 }

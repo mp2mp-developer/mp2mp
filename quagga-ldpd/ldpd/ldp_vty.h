@@ -74,6 +74,10 @@ int	 ldp_vty_show_atom_vc(struct vty *, struct vty_arg *[]);
 int	 ldp_vty_clear_nbr(struct vty *, struct vty_arg *[]);
 int	 ldp_vty_debug(struct vty *, struct vty_arg *[]);
 int	 ldp_vty_show_debugging(struct vty *, struct vty_arg *[]);
+//mp2mp
+int  ldp_vty_show_mp2mp_uscb(struct vty *, struct vty_arg *[]);
+int  ldp_vty_show_mp2mp_dscb(struct vty *, struct vty_arg *[]);
+int  ldp_vty_show_mp2mp_lsp(struct vty *, struct vty_arg *[]);
 
 void	 ldp_vty_init(void);
 void	 ldp_vty_if_init(void);

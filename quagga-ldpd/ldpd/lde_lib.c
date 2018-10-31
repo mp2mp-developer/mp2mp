@@ -149,6 +149,24 @@ lde_nbr_is_nexthop(struct fec_node *fn, struct lde_nbr *ln)
 }
 
 void
+mp2mp_uscb_dump(pid_t pid)
+{
+    printf("%s\n", __func__);
+}
+
+void
+mp2mp_dscb_dump(pid_t pid)
+{
+    printf("%s\n", __func__);
+}
+
+void
+mp2mp_lsp_dump(pid_t pid)
+{
+    printf("%s\n", __func__);
+}
+
+void
 rt_dump(pid_t pid)
 {
 	struct fec		*f;
