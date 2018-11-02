@@ -266,12 +266,22 @@ control_dispatch_imsg(struct thread *thread)
         case IMSG_CTL_SHOW_MP2MP_USCB:
         case IMSG_CTL_SHOW_MP2MP_LSP:
         case IMSG_CTL_SHOW_MP2MP_DSCB:
+        case IMSG_CTL_SHOW_MP2MP_INSEG:
+        case IMSG_CTL_SHOW_MP2MP_OUTSEG:
             printf("%s, msg_type: %d\n", __func__, imsg.hdr.type);
             c->iev.ibuf.pid = imsg.hdr.pid;
 			ldpe_imsg_compose_lde(imsg.hdr.type, 0, imsg.hdr.pid,
 			    imsg.data, imsg.hdr.len - IMSG_HEADER_SIZE);
            break;
-		default:
+        case IMSG_CTL_MP2MP_SET_ROOT:
+        case IMSG_CTL_MP2MP_ROUTE_CHANGE:
+            printf("%s, msg_type: %d\n", __func__, imsg.hdr.type);
+            //TODO: 要传ip参数
+            c->iev.ibuf.pid = imsg.hdr.pid;
+			ldpe_imsg_compose_lde(imsg.hdr.type, 0, imsg.hdr.pid,
+			    imsg.data, imsg.hdr.len - IMSG_HEADER_SIZE);
+           break;
+	default:
 			log_debug("%s: error handling imsg %d", __func__,
 			    imsg.hdr.type);
 			break;

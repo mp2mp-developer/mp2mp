@@ -41,7 +41,11 @@ enum show_command {
 	SHOW_L2VPN_BINDING,
     SHOW_MP2MP_USCB,
     SHOW_MP2MP_DSCB,
-    SHOW_MP2MP_LSP
+    SHOW_MP2MP_LSP,
+    SHOW_MP2MP_INSEG,
+    SHOW_MP2MP_OUTSEG,
+    MP2MP_SET_ROOT,
+    MP2MP_ROUTE_CHANGE
 };
 
 struct show_filter {
@@ -72,6 +76,10 @@ static int		 ldp_vty_get_af(const char *, int *);
 static int      show_mp2mp_uscb_msg(struct vty *vty, struct imsg *imsg);
 static int      show_mp2mp_dscb_msg(struct vty *vty, struct imsg *imsg);
 static int      show_mp2mp_lsp_msg(struct vty *vty, struct imsg *imsg);
+static int      show_mp2mp_insegment_msg(struct vty *vty, struct imsg *imsg);
+static int      show_mp2mp_outsegment_msg(struct vty *vty, struct imsg *imsg);
+static int      show_mp2mp_set_root_status(struct vty *vty, struct imsg *imsg);
+static int      show_mp2mp_route_change_status(struct vty *vty, struct imsg *imsg);
 
 static int
 show_interface_msg(struct vty *vty, struct imsg *imsg,
@@ -490,7 +498,23 @@ ldp_vty_dispatch(struct vty *vty, struct imsgbuf *ibuf, enum show_command cmd,
                 printf("%s, SHOW_MP2MP_LSP\n", __func__);
                 done = show_mp2mp_lsp_msg(vty, &imsg);
                 break;
-			default:
+            case SHOW_MP2MP_INSEG:
+                printf("%s, SHOW_MP2MP_INSEG\n", __func__);
+                done = show_mp2mp_insegment_msg(vty, &imsg);
+                break;
+            case SHOW_MP2MP_OUTSEG:
+                printf("%s, SHOW_MP2MP_OUTSEG\n", __func__);
+                done = show_mp2mp_outsegment_msg(vty, &imsg);
+                break;
+            case MP2MP_SET_ROOT:
+                printf("%s, MP2MP_SET_ROOT\n", __func__);
+                done = show_mp2mp_set_root_status(vty, &imsg);
+                break;
+            case MP2MP_ROUTE_CHANGE:
+                printf("%s, MP2MP_ROUTE_CHANGE\n", __func__);
+                done = show_mp2mp_route_change_status(vty, &imsg);
+                break;
+		default:
 				break;
 			}
 			imsg_free(&imsg);
@@ -668,6 +692,78 @@ ldp_vty_show_mp2mp_lsp(struct vty *vty, struct vty_arg *args[])
 }
 
 int
+ldp_vty_show_mp2mp_insegment(struct vty *vty, struct vty_arg *args[])
+{
+    printf("%s\n", __func__);
+ 	struct imsgbuf		 ibuf;
+	struct show_filter	 filter;
+
+	if (ldp_vty_connect(&ibuf) < 0)
+		return (CMD_WARNING);
+
+	imsg_compose(&ibuf, IMSG_CTL_SHOW_MP2MP_INSEG, 0, 0, -1, NULL, 0);
+
+	/* not used */
+	memset(&filter, 0, sizeof(filter));
+
+	return (ldp_vty_dispatch(vty, &ibuf, SHOW_MP2MP_INSEG, &filter));
+}
+
+int
+ldp_vty_show_mp2mp_outsegment(struct vty *vty, struct vty_arg *args[])
+{
+    printf("%s\n", __func__);
+ 	struct imsgbuf		 ibuf;
+	struct show_filter	 filter;
+
+	if (ldp_vty_connect(&ibuf) < 0)
+		return (CMD_WARNING);
+
+	imsg_compose(&ibuf, IMSG_CTL_SHOW_MP2MP_OUTSEG, 0, 0, -1, NULL, 0);
+
+	/* not used */
+	memset(&filter, 0, sizeof(filter));
+
+	return (ldp_vty_dispatch(vty, &ibuf, SHOW_MP2MP_OUTSEG, &filter));
+}
+
+int
+ldp_vty_mp2mp_set_root(struct vty *vty, struct vty_arg *args[])
+{
+    printf("%s\n", __func__);
+ 	struct imsgbuf		 ibuf;
+	struct show_filter	 filter;
+
+	if (ldp_vty_connect(&ibuf) < 0)
+		return (CMD_WARNING);
+
+	imsg_compose(&ibuf, IMSG_CTL_MP2MP_SET_ROOT, 0, 0, -1, NULL, 0);
+
+	/* not used */
+	memset(&filter, 0, sizeof(filter));
+
+	return (ldp_vty_dispatch(vty, &ibuf, MP2MP_SET_ROOT, &filter));
+}
+
+int
+ldp_vty_mp2mp_route_change(struct vty *vty, struct vty_arg *args[])
+{
+    printf("%s\n", __func__);
+ 	struct imsgbuf		 ibuf;
+	struct show_filter	 filter;
+
+	if (ldp_vty_connect(&ibuf) < 0)
+		return (CMD_WARNING);
+
+	imsg_compose(&ibuf, IMSG_CTL_MP2MP_ROUTE_CHANGE, 0, 0, -1, NULL, 0);
+
+	/* not used */
+	memset(&filter, 0, sizeof(filter));
+
+	return (ldp_vty_dispatch(vty, &ibuf, MP2MP_ROUTE_CHANGE, &filter));
+}
+
+int
 ldp_vty_show_atom_binding(struct vty *vty, struct vty_arg *args[])
 {
 	struct imsgbuf		 ibuf;
@@ -758,6 +854,34 @@ show_mp2mp_dscb_msg(struct vty *vty, struct imsg *imsg)
 
 static int
 show_mp2mp_lsp_msg(struct vty *vty, struct imsg *imsg)
+{
+    printf("%s\n", __func__);
+    return (1);
+}
+    
+static int
+show_mp2mp_insegment_msg(struct vty *vty, struct imsg *imsg)
+{
+    printf("%s\n", __func__);
+    return (1);
+}
+
+static int
+show_mp2mp_outsegment_msg(struct vty *vty, struct imsg *imsg)
+{
+    printf("%s\n", __func__);
+    return (1);
+}
+
+static int
+show_mp2mp_set_root_status(struct vty *vty, struct imsg *imsg)
+{
+    printf("%s\n", __func__);
+    return (1);
+}
+
+static int
+show_mp2mp_route_change_status(struct vty *vty, struct imsg *imsg)
 {
     printf("%s\n", __func__);
     return (1);

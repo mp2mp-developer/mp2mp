@@ -626,7 +626,9 @@ ldpe_dispatch_lde(struct thread *thread)
 		case IMSG_CTL_SHOW_LIB:
 		case IMSG_CTL_SHOW_L2VPN_PW:
 		case IMSG_CTL_SHOW_L2VPN_BINDING:
-            printf("%s, IMSG_CTL_END, IMSG_CTL_SHOW_LIB, IMSG_CTL_SHOW_L2VPN_PW, IMSG_CTL_SHOW_L2VPN_BINDING\n", __func__);
+        case IMSG_CTL_MP2MP_SET_ROOT:
+        case IMSG_CTL_MP2MP_ROUTE_CHANGE:
+            printf("%s, imsg_type:%d\n", __func__, imsg.hdr.type);
             control_imsg_relay(&imsg);
 			break;
 		default:

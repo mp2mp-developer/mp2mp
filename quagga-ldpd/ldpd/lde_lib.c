@@ -167,6 +167,18 @@ mp2mp_lsp_dump(pid_t pid)
 }
 
 void
+mp2mp_insegment_dump(pid_t pid)
+{
+    printf("%s\n", __func__);
+}
+
+void
+mp2mp_outsegment_dump(pid_t pid)
+{
+    printf("%s\n", __func__);
+}
+
+void
 rt_dump(pid_t pid)
 {
 	struct fec		*f;

@@ -161,6 +161,8 @@ void		 rt_dump(pid_t);
 void		 mp2mp_uscb_dump(pid_t);
 void		 mp2mp_dscb_dump(pid_t);
 void		 mp2mp_lsp_dump(pid_t);
+void         mp2mp_insegment_dump(pid_t);
+void         mp2mp_outsegment_dump(pid_t);
 void		 fec_snap(struct lde_nbr *);
 void		 fec_tree_clear(void);
 struct fec_nh	*fec_nh_find(struct fec_node *, int, union ldpd_addr *,
@@ -179,6 +181,10 @@ void		 lde_check_withdraw_wcard(struct map *, struct lde_nbr *);
 int		 lde_gc_timer(struct thread *);
 void		 lde_gc_start_timer(void);
 void		 lde_gc_stop_timer(void);
+
+/* mp2mp */
+int lde_mp2mp_start(void);
+int lde_mp2mp_up_proto_change(void);
 
 /* l2vpn.c */
 struct l2vpn	*l2vpn_new(const char *);

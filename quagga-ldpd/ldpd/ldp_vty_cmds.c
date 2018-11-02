@@ -1225,6 +1225,30 @@ DEFUN (ldp_show_mpls_mp2mp_lsp,
   return ldp_vty_show_mp2mp_lsp (vty, args);
 }
 
+DEFUN (ldp_show_mpls_mp2mp_insegment,
+       ldp_show_mpls_mp2mp_insegment_cmd,
+       "show mpls mp2mp insegment",
+       "Show running system information\n"
+       "MPLS information\n"
+       "Label Distribution Protocol : mp2mp\n"
+       "mp2mp insegment information\n")
+{
+  struct vty_arg *args[] = { NULL };
+  return ldp_vty_show_mp2mp_insegment (vty, args);
+}
+
+DEFUN (ldp_show_mpls_mp2mp_outsegment,
+       ldp_show_mpls_mp2mp_outsegment_cmd,
+       "show mpls mp2mp outsegment",
+       "Show running system information\n"
+       "MPLS information\n"
+       "Label Distribution Protocol : mp2mp\n"
+       "mp2mp outsegment information\n")
+{
+  struct vty_arg *args[] = { NULL };
+  return ldp_vty_show_mp2mp_outsegment (vty, args);
+}
+
 DEFUN (ldp_show_l2vpn_atom_binding,
        ldp_show_l2vpn_atom_binding_cmd,
        "show l2vpn atom binding",
@@ -1259,6 +1283,66 @@ DEFUN (ldp_show_debugging_mpls_ldp,
 {
   struct vty_arg *args[] = { NULL };
   return ldp_vty_show_debugging (vty, args);
+}
+
+DEFUN (ldp_mpls_mp2mp_set_root,
+       ldp_mpls_mp2mp_set_root_cmd,
+       "mpls mp2mp set root",
+       "mpls\n"
+       "mp2mp protocol\n"
+       "set arg\n"
+       "set mp2mp root ip\n")
+{
+  struct vty_arg *args[] = { NULL };
+  return ldp_vty_mp2mp_set_root (vty, args);
+}
+
+DEFUN (ldp_mpls_mp2mp_set_root_addr,
+       ldp_mpls_mp2mp_set_root_addr_cmd,
+       "mpls mp2mp set root (A.B.C.D|X:X::X:X)",
+       "mpls\n"
+       "mp2mp protocol\n"
+       "set arg\n"
+       "set mp2mp root ip\n"
+       "IPv4 address\n"
+       "IPv6 address\n")
+{
+  struct vty_arg *args[] =
+    {
+      &(struct vty_arg) { .name = "rootip", .value = argv[0] },
+      NULL
+    };
+  return ldp_vty_mp2mp_set_root (vty, args);
+}
+
+DEFUN (ldp_mpls_mp2mp_set_nexthop,
+       ldp_mpls_mp2mp_set_nexthop_cmd,
+       "mpls mp2mp set nexthop",
+       "mpls\n"
+       "mp2mp protocol\n"
+       "set arg\n"
+       "set mp2mp nexthop\n")
+{
+  struct vty_arg *args[] = { NULL };
+  return ldp_vty_mp2mp_route_change (vty, args);
+}
+
+DEFUN (ldp_mpls_mp2mp_set_nexthop_addr,
+       ldp_mpls_mp2mp_set_nexthop_addr_cmd,
+       "mpls mp2mp set nexthop (A.B.C.D|X:X::X:X)",
+       "mpls\n"
+       "mp2mp protocol\n"
+       "set arg\n"
+       "set mp2mp nexthop\n"
+       "IPv4 address\n"
+       "IPv6 address\n")
+{
+  struct vty_arg *args[] =
+    {
+      &(struct vty_arg) { .name = "nexthopip", .value = argv[0] },
+      NULL
+    };
+  return ldp_vty_mp2mp_route_change (vty, args);
 }
 
 DEFUN (ldp_clear_mpls_ldp_neighbor,
@@ -1741,9 +1825,15 @@ ldp_vty_init (void)
   install_element (ENABLE_NODE, &ldp_show_mpls_mp2mp_uscb_cmd);
   install_element (ENABLE_NODE, &ldp_show_mpls_mp2mp_dscb_cmd);
   install_element (ENABLE_NODE, &ldp_show_mpls_mp2mp_lsp_cmd);
+  install_element (ENABLE_NODE, &ldp_show_mpls_mp2mp_insegment_cmd);
+  install_element (ENABLE_NODE, &ldp_show_mpls_mp2mp_outsegment_cmd);
   install_element (ENABLE_NODE, &ldp_show_l2vpn_atom_binding_cmd);
   install_element (ENABLE_NODE, &ldp_show_l2vpn_atom_vc_cmd);
   install_element (ENABLE_NODE, &ldp_show_debugging_mpls_ldp_cmd);
+  install_element (ENABLE_NODE, &ldp_mpls_mp2mp_set_root_cmd);
+  install_element (ENABLE_NODE, &ldp_mpls_mp2mp_set_root_addr_cmd);
+  install_element (ENABLE_NODE, &ldp_mpls_mp2mp_set_nexthop_cmd);
+  install_element (ENABLE_NODE, &ldp_mpls_mp2mp_set_nexthop_addr_cmd);
   install_element (ENABLE_NODE, &ldp_clear_mpls_ldp_neighbor_cmd);
   install_element (ENABLE_NODE, &ldp_clear_mpls_ldp_neighbor_addr_cmd);
   install_element (ENABLE_NODE, &ldp_debug_mpls_ldp_discovery_hello_dir_cmd);
@@ -1772,9 +1862,15 @@ ldp_vty_init (void)
   install_element (VIEW_NODE, &ldp_show_mpls_mp2mp_uscb_cmd);
   install_element (VIEW_NODE, &ldp_show_mpls_mp2mp_dscb_cmd);
   install_element (VIEW_NODE, &ldp_show_mpls_mp2mp_lsp_cmd);
+  install_element (VIEW_NODE, &ldp_show_mpls_mp2mp_insegment_cmd);
+  install_element (VIEW_NODE, &ldp_show_mpls_mp2mp_outsegment_cmd);
   install_element (VIEW_NODE, &ldp_show_l2vpn_atom_binding_cmd);
   install_element (VIEW_NODE, &ldp_show_l2vpn_atom_vc_cmd);
   install_element (VIEW_NODE, &ldp_show_debugging_mpls_ldp_cmd);
+  install_element (VIEW_NODE, &ldp_mpls_mp2mp_set_root_cmd);
+  install_element (VIEW_NODE, &ldp_mpls_mp2mp_set_root_addr_cmd);
+  install_element (VIEW_NODE, &ldp_mpls_mp2mp_set_nexthop_cmd);
+  install_element (VIEW_NODE, &ldp_mpls_mp2mp_set_nexthop_addr_cmd);
   install_element (VIEW_NODE, &ldp_clear_mpls_ldp_neighbor_cmd);
   install_element (VIEW_NODE, &ldp_clear_mpls_ldp_neighbor_addr_cmd);
 }

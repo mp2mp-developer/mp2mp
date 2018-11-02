@@ -363,7 +363,35 @@ lde_dispatch_imsg(struct thread *thread)
             lde_imsg_compose_ldpe(IMSG_CTL_END, 0,
                     imsg.hdr.pid, NULL, 0);
             break;
-        case IMSG_CTL_SHOW_L2VPN_PW:
+        case IMSG_CTL_SHOW_MP2MP_INSEG:
+            printf("%s, IMSG_CTL_SHOW_MP2MP_INSEG\n", __func__);
+            mp2mp_insegment_dump(imsg.hdr.pid);
+
+            lde_imsg_compose_ldpe(IMSG_CTL_END, 0,
+                    imsg.hdr.pid, NULL, 0);
+            break;
+        case IMSG_CTL_SHOW_MP2MP_OUTSEG:
+            printf("%s, IMSG_CTL_SHOW_MP2MP_OUTSEG\n", __func__);
+            mp2mp_outsegment_dump(imsg.hdr.pid);
+
+            lde_imsg_compose_ldpe(IMSG_CTL_END, 0,
+                    imsg.hdr.pid, NULL, 0);
+            break;
+        case IMSG_CTL_MP2MP_SET_ROOT:
+            printf("%s, IMSG_CTL_MP2MP_SET_ROOT\n", __func__);
+            lde_mp2mp_start();
+            //函数里要回IMSG_CTL_MP2MP_SET_ROOT类型的消息，表示回显成功
+            lde_imsg_compose_ldpe(IMSG_CTL_END, 0,
+                    imsg.hdr.pid, NULL, 0);
+            break;
+        case IMSG_CTL_MP2MP_ROUTE_CHANGE:
+            printf("%s, IMSG_CTL_MP2MP_ROUTE_CHANGE\n", __func__);
+            lde_mp2mp_up_proto_change();
+            //函数里要回IMSG_CTL_MP2MP_ROUTE_CHANGE类型的消息，表示回显成功
+            lde_imsg_compose_ldpe(IMSG_CTL_END, 0,
+                    imsg.hdr.pid, NULL, 0);
+            break;
+       case IMSG_CTL_SHOW_L2VPN_PW:
 			l2vpn_pw_ctl(imsg.hdr.pid);
 
 			lde_imsg_compose_ldpe(IMSG_CTL_END, 0,
@@ -1323,4 +1351,14 @@ lde_address_list_free(struct lde_nbr *ln)
 		TAILQ_REMOVE(&ln->addr_list, lde_addr, entry);
 		free(lde_addr);
 	}
+}
+
+int lde_mp2mp_start(void) {
+    printf("%s\n", __func__);
+    return 0;
+}
+
+int lde_mp2mp_up_proto_change(void) {
+    printf("%s\n", __func__);
+    return 0;
 }
