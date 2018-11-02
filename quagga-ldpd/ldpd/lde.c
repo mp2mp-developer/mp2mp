@@ -34,6 +34,8 @@
 #include "sigevent.h"
 #include "mpls.h"
 
+#define ECHO
+
 static void		 lde_shutdown(void);
 static int		 lde_dispatch_imsg(struct thread *);
 static int		 lde_dispatch_parent(struct thread *);
@@ -1353,6 +1355,46 @@ lde_address_list_free(struct lde_nbr *ln)
 	}
 }
 
+#ifdef ECHO
+int lde_mp2mp_start(void) {
+    printf("%s, echo\n", __func__);
+
+    struct fec fec;
+    struct fec_node *fn;
+   
+    //TODO:通过命令行传入
+    char root_ip[20] = "9.9.9.9";
+    fec.type = FEC_TYPE_IPV4;
+    fec.u.ipv4.prefix.s_addr = inet_addr(root_ip);
+    fec.u.ipv4.prefixlen = 32;
+    fn = (struct fec_node *)fec_find(&ft, &fec);
+    if (fn == NULL)
+        fn = fec_mp2mp_add(&fec);
+    if (fn->data == NULL) {
+        fn->data = calloc(1, sizeof(struct fec_mp2mp_ext));
+        if (fn->data == NULL) {
+            fatal(__func__);
+        }
+    }
+
+    //debug code, 遍历显示此fec_node下挂的下一跳，对mp2mp来说，就是一个，就是此fec的上游
+    struct fec_nh *fnh;
+    LIST_FOREACH(fnh, &fn->nexthops, entry) {
+        printf("%s, fnh->nexthop: %s, fnh->remote_label: %d, fnh->priority: %u\n",
+                __func__, inet_ntoa(fnh->nexthop.v4), fnh->remote_label, fnh->priority);
+    }
+    //debug code
+
+    printf("%s, ldeconf-rtr_id: %s\n", __func__, inet_ntoa(ldeconf->rtr_id)); 
+
+    return 0;
+}
+
+int lde_mp2mp_up_proto_change(void) {
+    printf("%s, echo\n", __func__);
+    return 0;
+}
+#else
 int lde_mp2mp_start(void) {
     printf("%s\n", __func__);
     return 0;
@@ -1362,3 +1404,4 @@ int lde_mp2mp_up_proto_change(void) {
     printf("%s\n", __func__);
     return 0;
 }
+#endif

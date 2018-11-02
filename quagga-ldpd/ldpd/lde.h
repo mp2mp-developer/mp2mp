@@ -59,6 +59,9 @@ struct lde_req {
 };
 
 /* mapping entries */
+/* nexthop, 如果是发送的报文，指向要发送的邻居 */
+/* 如果是收到的报文，指向发送者 */
+/* 这样，在收到U-Mapping时就可以遍历收到的D-Mapping，通过这个字段知道该回复给谁 */
 struct lde_map {
 	struct fec		 fec;
 	LIST_ENTRY(lde_map)	 entry;
@@ -113,6 +116,14 @@ struct fec_node {
 
 	uint32_t		 local_label;
 	void			*data;		/* fec specific data */
+    /* p2p 在fec_type是FEC_TYPE_PWID时候强转成struct l2vpn_pw * */
+    /* mp2mp 在fec_type是FEC_TYPE_IPV4时候强转成struct fec_mp2mp_ext* ,作为mp2mp的拓展用 */
+};
+
+struct fec_mp2mp_ext {
+    uint32_t mbb_flag;
+    //TODO:hold_timer
+    //TODO:switch_delay_timer
 };
 
 #define LDE_GC_INTERVAL 300
@@ -154,6 +165,7 @@ struct lde_addr	*lde_address_find(struct lde_nbr *, int,
 /* lde_lib.c */
 void		 fec_init(struct fec_tree *);
 struct fec	*fec_find(struct fec_tree *, struct fec *);
+struct fec_node	*fec_mp2mp_add(struct fec *fec); 
 int		 fec_insert(struct fec_tree *, struct fec *);
 int		 fec_remove(struct fec_tree *, struct fec *);
 void		 fec_clear(struct fec_tree *, void (*)(void *));

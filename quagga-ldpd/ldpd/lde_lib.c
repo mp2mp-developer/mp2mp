@@ -29,10 +29,10 @@ static __inline int	 fec_compare(struct fec *, struct fec *);
 static int		 lde_nbr_is_nexthop(struct fec_node *,
 			    struct lde_nbr *);
 static void		 fec_free(void *);
-static struct fec_node	*fec_add(struct fec *fec);
 static struct fec_nh	*fec_nh_add(struct fec_node *, int, union ldpd_addr *,
 			    uint8_t priority);
 static void		 fec_nh_del(struct fec_nh *);
+static struct fec_node	*fec_add(struct fec *fec); 
 
 RB_GENERATE(fec_tree, fec, entry, fec_compare)
 
@@ -261,6 +261,12 @@ fec_free(void *arg)
 	if (!LIST_EMPTY(&fn->upstream))
 		log_warnx("%s: fec %s upstream list not empty", __func__,
 		    log_fec(&fn->fec));
+    
+    //add for mp2mp, free fec_mp2mp_ext
+    if (fn->data != NULL) {
+        free(fn->data);
+        fn->data = NULL;
+    }
 
 	free(fn);
 }
@@ -275,6 +281,8 @@ static struct fec_node *
 fec_add(struct fec *fec)
 {
 	struct fec_node	*fn;
+
+    log_notice("%s, fec->prefix: %s, fec->prefixlen: %u", __func__, inet_ntoa(fec->u.ipv4.prefix), fec->u.ipv4.prefixlen);
 
 	fn = calloc(1, sizeof(*fn));
 	if (fn == NULL)
@@ -802,4 +810,19 @@ void
 lde_gc_stop_timer(void)
 {
 	THREAD_TIMER_OFF(gc_timer);
+}
+
+struct fec_node *
+fec_mp2mp_add(struct fec *fec)
+{
+    struct fec_node *fn = NULL;
+    
+    fn = fec_add(fec);
+    fn->data = calloc(1, sizeof(struct fec_mp2mp_ext));
+    if (fn->data == NULL) {
+        fatal(__func__);
+        return NULL;    
+    }
+    
+    return fn;
 }

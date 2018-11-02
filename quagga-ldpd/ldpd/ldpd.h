@@ -51,6 +51,12 @@
 #define	F_BLACKHOLE		0x0020
 #define	F_REDISTRIBUTED		0x0040
 
+//mp2mp mbb status
+#define NONE             0x00000000
+#define SEND_MAPPING     0x00000001
+#define WAIT_NOTIFI      0x00000002
+#define SWITCH_DELAY     0x00000003
+
 struct evbuf {
 	struct msgbuf		 wbuf;
 	struct thread		*ev;
