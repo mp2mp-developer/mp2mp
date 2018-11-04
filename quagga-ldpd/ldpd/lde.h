@@ -24,6 +24,15 @@
 #include "openbsd-queue.h"
 #include "openbsd-tree.h"
 
+#define LEAF        inet_addr("1.1.1.1")
+#define SWITCH      inet_addr("2.2.2.2")
+#define SWITCH_MID1 inet_addr("3.3.3.3")
+#define SWITCH_MID2 inet_addr("4.4.4.4")
+#define ROOT        inet_addr("5.5.5.5")
+
+#define UP   0  //往根方向发mapping
+#define DOWN 1  //往叶子方向发mapping
+
 enum fec_type {
 	FEC_TYPE_IPV4,
 	FEC_TYPE_IPV6,
@@ -121,7 +130,7 @@ struct fec_node {
 };
 
 struct fec_mp2mp_ext {
-    uint32_t mbb_flag;
+    uint8_t mbb_flag;
     //TODO:hold_timer
     //TODO:switch_delay_timer
 };
@@ -197,6 +206,12 @@ void		 lde_gc_stop_timer(void);
 /* mp2mp */
 int lde_mp2mp_start(void);
 int lde_mp2mp_up_proto_change(void);
+int lde_mp2mp_make_leaf_node(struct fec_node *fn);
+int lde_mp2mp_make_switch_node(void);
+int lde_mp2mp_make_switch_mid_node(void);
+int lde_mp2mp_make_root_node(void);
+int lde_mp2mp_create_d_mapping(struct fec_node *fn, struct in_addr nid, int stream);
+int lde_mp2mp_create_u_mapping(struct fec_node *fn, struct in_addr nid, int stream);
 
 /* l2vpn.c */
 struct l2vpn	*l2vpn_new(const char *);

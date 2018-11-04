@@ -52,10 +52,15 @@
 #define	F_REDISTRIBUTED		0x0040
 
 //mp2mp mbb status
-#define NONE             0x00000000
-#define SEND_MAPPING     0x00000001
-#define WAIT_NOTIFI      0x00000002
-#define SWITCH_DELAY     0x00000003
+#define NONE             0x01
+#define SEND_MAPPING     0x02
+#define WAIT_NOTIFI      0x04
+#define SWITCH_DELAY     0x08
+
+//mp2mp inner flags
+#define D_MAPPING_IN 0x10
+#define U_MAPPING_IN 0x20
+#define FEC_MP2MP_EXT(fn) ((struct fec_mp2mp_ext*)(fn->data))
 
 struct evbuf {
 	struct msgbuf		 wbuf;

@@ -628,6 +628,11 @@ ldpe_dispatch_lde(struct thread *thread)
 		case IMSG_CTL_SHOW_L2VPN_BINDING:
         case IMSG_CTL_MP2MP_SET_ROOT:
         case IMSG_CTL_MP2MP_ROUTE_CHANGE:
+        case IMSG_CTL_SHOW_MP2MP_USCB:
+        case IMSG_CTL_SHOW_MP2MP_DSCB:
+        case IMSG_CTL_SHOW_MP2MP_INSEG:
+        case IMSG_CTL_SHOW_MP2MP_OUTSEG:
+        case IMSG_CTL_SHOW_MP2MP_LSP:
             printf("%s, imsg_type:%d\n", __func__, imsg.hdr.type);
             control_imsg_relay(&imsg);
 			break;

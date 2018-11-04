@@ -25,6 +25,7 @@
 
 #include "mpls.h"
 
+
 static __inline int	 fec_compare(struct fec *, struct fec *);
 static int		 lde_nbr_is_nexthop(struct fec_node *,
 			    struct lde_nbr *);
@@ -151,7 +152,62 @@ lde_nbr_is_nexthop(struct fec_node *fn, struct lde_nbr *ln)
 void
 mp2mp_uscb_dump(pid_t pid)
 {
-    printf("%s\n", __func__);
+	struct fec		*f;
+	struct fec_node		*fn;
+	struct lde_map		*me;
+	static struct ctl_rt	 rtctl;
+
+    printf("%s, pid: %d\n", __func__, pid);
+	RB_FOREACH(f, fec_tree, &ft) {
+		fn = (struct fec_node *)f;
+		if (fn->local_label == NO_LABEL &&
+		    LIST_EMPTY(&fn->downstream) &&
+            LIST_EMPTY(&fn->upstream))
+			continue;
+
+		rtctl.first = 1;
+		switch (fn->fec.type) {
+		case FEC_TYPE_IPV4:
+			rtctl.af = AF_INET;
+			rtctl.prefix.v4 = fn->fec.u.ipv4.prefix;
+			rtctl.prefixlen = fn->fec.u.ipv4.prefixlen;
+			break;
+		case FEC_TYPE_IPV6:
+			rtctl.af = AF_INET6;
+			rtctl.prefix.v6 = fn->fec.u.ipv6.prefix;
+			rtctl.prefixlen = fn->fec.u.ipv6.prefixlen;
+			break;
+		default:
+			continue;
+		}
+
+		rtctl.local_label = fn->local_label; //不予显示
+		LIST_FOREACH(me, &fn->upstream, entry) {
+            if (me->map.type != MAP_TYPE_MP2MP_UP && me->map.type != MAP_TYPE_MP2MP_DOWN) continue;
+			rtctl.in_use = lde_nbr_is_nexthop(fn, me->nexthop);
+			rtctl.nexthop = me->nexthop->id;
+			rtctl.remote_label = me->map.label;
+            if (me->map.type == MAP_TYPE_MP2MP_UP)  rtctl.flags |= U_MAPPING_IN;
+            if (me->map.type == MAP_TYPE_MP2MP_DOWN)  rtctl.flags |= D_MAPPING_IN;
+            if (fn->data != NULL)  rtctl.flags |= FEC_MP2MP_EXT(fn)->mbb_flag;
+
+            printf("%s, mbb_flag: %u\n", __func__, FEC_MP2MP_EXT(fn)->mbb_flag);
+			lde_imsg_compose_ldpe(IMSG_CTL_SHOW_MP2MP_USCB, 0, pid,
+			    &rtctl, sizeof(rtctl));
+			rtctl.first = 0;
+		}
+		if (LIST_EMPTY(&fn->upstream)) {
+            if (me->map.type != MAP_TYPE_MP2MP_UP && me->map.type != MAP_TYPE_MP2MP_DOWN) continue;
+			rtctl.in_use = 0;
+			rtctl.nexthop.s_addr = INADDR_ANY;
+			rtctl.remote_label = NO_LABEL;
+            rtctl.flags = 0;
+
+			lde_imsg_compose_ldpe(IMSG_CTL_SHOW_MP2MP_USCB, 0, pid,
+			    &rtctl, sizeof(rtctl));
+		}
+	}
+
 }
 
 void
@@ -823,6 +879,6 @@ fec_mp2mp_add(struct fec *fec)
         fatal(__func__);
         return NULL;    
     }
-    
+    FEC_MP2MP_EXT(fn)->mbb_flag |= SEND_MAPPING;    
     return fn;
 }

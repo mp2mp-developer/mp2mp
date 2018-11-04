@@ -244,8 +244,8 @@ struct address_list_tlv {
 #define	MAP_TYPE_WILDCARD	0x01
 #define	MAP_TYPE_PREFIX		0x02
 /* mp2mp start */
-#define MAP_TYPE_MP2MP_UP   0x07
-#define MAP_TYPE_MP2MP_DOWN 0x08
+#define MAP_TYPE_MP2MP_UP   0x07    //U-mapping
+#define MAP_TYPE_MP2MP_DOWN 0x08    //D-mapping
 /* mp2mp end */
 #define	MAP_TYPE_PWID		0x80
 #define	MAP_TYPE_GENPWID	0x81

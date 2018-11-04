@@ -818,6 +818,8 @@ lde_map2fec(struct map *map, struct in_addr lsr_id, struct fec *fec)
 	}
 }
 
+/* single == 0 或者 1都代表原来的意思 */
+/* single == 2 mp2mp D-Mapping , single == 3 mp2mp U-Mapping*/
 void
 lde_send_labelmapping(struct lde_nbr *ln, struct fec_node *fn, int single)
 {
@@ -835,6 +837,8 @@ lde_send_labelmapping(struct lde_nbr *ln, struct fec_node *fn, int single)
 	lde_fec2map(&fn->fec, &map);
 	switch (fn->fec.type) {
 	case FEC_TYPE_IPV4:
+        if (single == 2) map.type = MAP_TYPE_MP2MP_DOWN;
+        if (single == 3) map.type = MAP_TYPE_MP2MP_UP;
 		if (!ln->v4_enabled)
 			return;
 		break;
@@ -859,7 +863,7 @@ lde_send_labelmapping(struct lde_nbr *ln, struct fec_node *fn, int single)
 		}
 		break;
 	}
-	map.label = fn->local_label;
+	map.label = (fn->local_label)++;    //add for mp2mp, 为了区分标签让它递增
 
 	/* SL.6: is there a pending request for this mapping? */
 	lre = (struct lde_req *)fec_find(&ln->recv_req, &fn->fec);
@@ -871,6 +875,14 @@ lde_send_labelmapping(struct lde_nbr *ln, struct fec_node *fn, int single)
 		/* SL.7: delete record of pending request */
 		lde_req_del(ln, lre, 0);
 	}
+
+    /* add for mp2mp */
+    if (fn->fec.type == FEC_TYPE_IPV4 && fn->data != NULL) {
+        //add for mbb
+        printf("%s, add SEND_MAPPING\n", __func__);
+        if (FEC_MP2MP_EXT(fn)->mbb_flag == NONE)
+            FEC_MP2MP_EXT(fn)->mbb_flag  &= SEND_MAPPING;
+    }
 
 	/* SL.4: send label mapping */
 	lde_imsg_compose_ldpe(IMSG_MAPPING_ADD, ln->peerid, 0,
@@ -1359,11 +1371,12 @@ lde_address_list_free(struct lde_nbr *ln)
 int lde_mp2mp_start(void) {
     printf("%s, echo\n", __func__);
 
+    int ref = 0;
     struct fec fec;
-    struct fec_node *fn;
+    struct fec_node *fn = NULL;
    
     //TODO:通过命令行传入
-    char root_ip[20] = "9.9.9.9";
+    char root_ip[20] = "5.5.5.5";
     fec.type = FEC_TYPE_IPV4;
     fec.u.ipv4.prefix.s_addr = inet_addr(root_ip);
     fec.u.ipv4.prefixlen = 32;
@@ -1372,28 +1385,81 @@ int lde_mp2mp_start(void) {
         fn = fec_mp2mp_add(&fec);
     if (fn->data == NULL) {
         fn->data = calloc(1, sizeof(struct fec_mp2mp_ext));
+        FEC_MP2MP_EXT(fn)->mbb_flag |= SEND_MAPPING;    
         if (fn->data == NULL) {
             fatal(__func__);
         }
     }
 
     //debug code, 遍历显示此fec_node下挂的下一跳，对mp2mp来说，就是一个，就是此fec的上游
-    struct fec_nh *fnh;
+    /*
+    struct fec_nh *fnh = NULL;
     LIST_FOREACH(fnh, &fn->nexthops, entry) {
+        if (fnh == NULL) {
+            printf("%s, no next hop\n", __func__);
+            return __LINE__;
+        }
         printf("%s, fnh->nexthop: %s, fnh->remote_label: %d, fnh->priority: %u\n",
                 __func__, inet_ntoa(fnh->nexthop.v4), fnh->remote_label, fnh->priority);
+        break;
     }
+    */
     //debug code
 
     printf("%s, ldeconf-rtr_id: %s\n", __func__, inet_ntoa(ldeconf->rtr_id)); 
+    
+    if (ldeconf->rtr_id.s_addr == LEAF) ref = lde_mp2mp_make_leaf_node(fn);
+    else if (ldeconf->rtr_id.s_addr == SWITCH) ref = lde_mp2mp_make_switch_node();
+    else if (ldeconf->rtr_id.s_addr == SWITCH_MID1 || ldeconf->rtr_id.s_addr == SWITCH_MID2)
+        ref = lde_mp2mp_make_switch_mid_node();
+    else if (ldeconf->rtr_id.s_addr == ROOT) ref = lde_mp2mp_make_root_node();
 
-    return 0;
+    return ref;
 }
 
 int lde_mp2mp_up_proto_change(void) {
     printf("%s, echo\n", __func__);
     return 0;
 }
+
+int lde_mp2mp_make_leaf_node(struct fec_node *fn) {
+
+    struct in_addr tmp;
+    tmp.s_addr = inet_addr("2.2.2.2");
+    lde_mp2mp_create_d_mapping(fn, tmp, UP);
+
+    return 0;
+}
+
+int lde_mp2mp_make_switch_node() { return 0; }
+
+int lde_mp2mp_make_switch_mid_node() { return 0; }
+
+int lde_mp2mp_make_root_node() { return 0; }
+
+int lde_mp2mp_create_d_mapping(struct fec_node *fn, struct in_addr nid, int stream) {
+    struct lde_nbr *ln = NULL;
+
+    printf("%s\n", __func__);
+    //先找lde_nbr邻居，发的报文找要发的，收的报文找从谁收的
+    //遍历一下，看看都有啥邻居
+    struct lde_nbr *tmp = NULL;
+    RB_FOREACH(tmp, nbr_tree, &lde_nbrs) {
+        printf("%s, tmp->peerid: %u, tmp->id: %s, nid: %s\n",
+                __func__, tmp->peerid, inet_ntoa(tmp->id), inet_ntoa(nid));
+        if (tmp->id.s_addr == nid.s_addr) {
+            ln = tmp;
+            break;
+        }
+    }
+
+    lde_send_labelmapping(ln, fn, 2);
+
+    return 0;
+}
+
+int lde_mp2mp_create_u_mapping(struct fec_node *fn, struct in_addr nid, int stream) { return 0; }
+
 #else
 int lde_mp2mp_start(void) {
     printf("%s\n", __func__);
