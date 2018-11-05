@@ -712,8 +712,8 @@ imsg_compose_event(struct imsgev *iev, uint16_t type, uint32_t peerid,
 {
 	int	ret;
     
-    printf("imsg_compose_event, type: %hu, peerid: %d, pid: %d, fd: %d, datalen: %hu\n",
-            type, peerid, pid, fd, datalen);
+//    printf("imsg_compose_event, type: %hu, peerid: %d, pid: %d, fd: %d, datalen: %hu\n",
+//            type, peerid, pid, fd, datalen);
 
     if ((ret = imsg_compose(&iev->ibuf, type, peerid,
 	    pid, fd, data, datalen)) != -1)
