@@ -830,6 +830,7 @@ lde_send_labelmapping(struct lde_nbr *ln, struct fec_node *fn, int single)
 	struct map	 map;
 	struct l2vpn_pw	*pw;
 
+    printf("%s, single: %d\n", __func__, single);
 	/*
 	 * This function skips SL.1 - 3 and SL.9 - 14 because the label
 	 * allocation is done way earlier (because of the merging nature of
@@ -1434,7 +1435,8 @@ int lde_mp2mp_make_leaf_node(struct fec_node *fn) {
 }
 
 int lde_mp2mp_make_switch_node(struct fec_node *fn) { 
-    
+
+    printf("%s\n", __func__);
     struct in_addr tmp1;
     tmp1.s_addr = inet_addr("1.1.1.1");
     lde_mp2mp_create_d_mapping(fn, tmp1, RECV);
@@ -1456,7 +1458,7 @@ int lde_mp2mp_create_d_mapping(struct fec_node *fn, struct in_addr nid, int stre
     
     struct lde_nbr *ln = NULL;
     struct map map;
-    printf("%s\n", __func__);
+    printf("%s, nid: %s, stream: %d\n", __func__, inet_ntoa(nid), stream);
     //先找lde_nbr邻居，发的报文找要发的，收的报文找从谁收的
     //遍历一下，看看都有啥邻居
     struct lde_nbr *tmp = NULL;
