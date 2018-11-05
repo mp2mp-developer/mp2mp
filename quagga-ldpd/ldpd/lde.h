@@ -30,8 +30,8 @@
 #define SWITCH_MID2 inet_addr("4.4.4.4")
 #define ROOT        inet_addr("5.5.5.5")
 
-#define UP   0  //往根方向发mapping
-#define DOWN 1  //往叶子方向发mapping
+#define SEND   0  //往根方向发mapping
+#define RECV   1  //往叶子方向发mapping
 
 enum fec_type {
 	FEC_TYPE_IPV4,
@@ -207,7 +207,7 @@ void		 lde_gc_stop_timer(void);
 int lde_mp2mp_start(void);
 int lde_mp2mp_up_proto_change(void);
 int lde_mp2mp_make_leaf_node(struct fec_node *fn);
-int lde_mp2mp_make_switch_node(void);
+int lde_mp2mp_make_switch_node(struct fec_node *fn);
 int lde_mp2mp_make_switch_mid_node(void);
 int lde_mp2mp_make_root_node(void);
 int lde_mp2mp_create_d_mapping(struct fec_node *fn, struct in_addr nid, int stream);

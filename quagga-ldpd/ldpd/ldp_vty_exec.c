@@ -899,7 +899,51 @@ static int
 show_mp2mp_dscb_msg(struct vty *vty, struct imsg *imsg)
 {
     printf("%s\n", __func__);
-    return (1);
+	struct ctl_rt	*rt;
+	char		 dstnet[BUFSIZ];
+
+	switch (imsg->hdr.type) {
+	case IMSG_CTL_SHOW_MP2MP_DSCB:
+		rt = imsg->data;
+
+//		if (filter->family != AF_UNSPEC && filter->family != rt->af)
+//			break;
+
+		snprintf(dstnet, sizeof(dstnet), "%s/%d",
+		    log_addr(rt->af, &rt->prefix), rt->prefixlen);
+
+		if (rt->first) {
+			vty_out(vty, "FEC: %s%s", dstnet, VTY_NEWLINE);
+//			vty_out(vty, "%-8sLocal binding: label: %s%s", "",
+//			    log_label(rt->local_label), VTY_NEWLINE);
+
+			if (rt->remote_label != NO_LABEL) {
+				vty_out(vty, "%-8sbindings:%s", "",
+				    VTY_NEWLINE);
+				vty_out(vty, "%-12sPeer                Label               Mapping-Type%s",
+				    "", VTY_NEWLINE);
+				vty_out(vty, "%-12s-----------------   "
+				    "---------           -------------%s", "", VTY_NEWLINE);
+			} else
+				vty_out(vty, "%-8sNo remote bindings%s", "",
+				    VTY_NEWLINE);
+		}
+        char mt[20] = "";
+        printf("%s, rt->flags: %u\n", __func__, rt->flags);
+        if ((rt->flags & U_MAPPING_IN) == U_MAPPING_IN) strcpy(mt, "U-MAPPING");
+        else if ((rt->flags & D_MAPPING_IN) == D_MAPPING_IN) strcpy(mt, "D-MAPPING");
+		if (rt->remote_label != NO_LABEL)
+			vty_out(vty, "%12s%-20s%-20s%-20s%s", "", inet_ntoa(rt->nexthop),
+			    log_label(rt->remote_label), mt, VTY_NEWLINE);
+		break;
+	case IMSG_CTL_END:
+		vty_out(vty, "%s", VTY_NEWLINE);
+		return (1);
+	default:
+		break;
+	}
+
+    return (0);
 }
 
 static int

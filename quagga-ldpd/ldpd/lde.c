@@ -793,6 +793,8 @@ lde_map2fec(struct map *map, struct in_addr lsr_id, struct fec *fec)
 
 	switch (map->type) {
 	case MAP_TYPE_PREFIX:
+    case MAP_TYPE_MP2MP_UP:
+    case MAP_TYPE_MP2MP_DOWN:
 		switch (map->fec.prefix.af) {
 		case AF_IPV4:
 			fec->type = FEC_TYPE_IPV4;
@@ -1409,7 +1411,7 @@ int lde_mp2mp_start(void) {
     printf("%s, ldeconf-rtr_id: %s\n", __func__, inet_ntoa(ldeconf->rtr_id)); 
     
     if (ldeconf->rtr_id.s_addr == LEAF) ref = lde_mp2mp_make_leaf_node(fn);
-    else if (ldeconf->rtr_id.s_addr == SWITCH) ref = lde_mp2mp_make_switch_node();
+    else if (ldeconf->rtr_id.s_addr == SWITCH) ref = lde_mp2mp_make_switch_node(fn);
     else if (ldeconf->rtr_id.s_addr == SWITCH_MID1 || ldeconf->rtr_id.s_addr == SWITCH_MID2)
         ref = lde_mp2mp_make_switch_mid_node();
     else if (ldeconf->rtr_id.s_addr == ROOT) ref = lde_mp2mp_make_root_node();
@@ -1426,20 +1428,34 @@ int lde_mp2mp_make_leaf_node(struct fec_node *fn) {
 
     struct in_addr tmp;
     tmp.s_addr = inet_addr("2.2.2.2");
-    lde_mp2mp_create_d_mapping(fn, tmp, UP);
-
+    lde_mp2mp_create_d_mapping(fn, tmp, SEND); //发出去的D-MAPPING
+    lde_mp2mp_create_u_mapping(fn, tmp, RECV); //收到的U-MAPPING
     return 0;
 }
 
-int lde_mp2mp_make_switch_node() { return 0; }
+int lde_mp2mp_make_switch_node(struct fec_node *fn) { 
+    
+    struct in_addr tmp1;
+    tmp1.s_addr = inet_addr("1.1.1.1");
+    lde_mp2mp_create_d_mapping(fn, tmp1, RECV);
+    lde_mp2mp_create_u_mapping(fn, tmp1, SEND);
+
+    struct in_addr tmp2;
+    tmp2.s_addr = inet_addr("3.3.3.3");
+    lde_mp2mp_create_d_mapping(fn, tmp2, SEND);
+    lde_mp2mp_create_u_mapping(fn, tmp2, RECV);
+
+    return 0;
+}
 
 int lde_mp2mp_make_switch_mid_node() { return 0; }
 
 int lde_mp2mp_make_root_node() { return 0; }
 
 int lde_mp2mp_create_d_mapping(struct fec_node *fn, struct in_addr nid, int stream) {
+    
     struct lde_nbr *ln = NULL;
-
+    struct map map;
     printf("%s\n", __func__);
     //先找lde_nbr邻居，发的报文找要发的，收的报文找从谁收的
     //遍历一下，看看都有啥邻居
@@ -1453,12 +1469,61 @@ int lde_mp2mp_create_d_mapping(struct fec_node *fn, struct in_addr nid, int stre
         }
     }
 
-    lde_send_labelmapping(ln, fn, 2);
+    //TODO: if stream == SEND lde_send_labelmapping;  if stream == RECV lde_check_mapping;
+    if (stream == SEND) {
+        lde_send_labelmapping(ln, fn, 2);
+    }
+    else if (stream == RECV) {
+        lde_fec2map(&(fn->fec), &map);
+        map.type = MAP_TYPE_MP2MP_DOWN;
+        map.msg_id = 0;
+        map.label = (fn->local_label)++;
+        map.requestid = 0;
+        map.pw_status = 0;
+        map.flags &= D_MAPPING_IN;
+
+        printf("%s, map.fec.prefix.prefix.v4: %s\n", __func__, inet_ntoa(map.fec.prefix.prefix.v4));
+        lde_check_mapping(&map, ln);
+    }
+
 
     return 0;
 }
 
-int lde_mp2mp_create_u_mapping(struct fec_node *fn, struct in_addr nid, int stream) { return 0; }
+int lde_mp2mp_create_u_mapping(struct fec_node *fn, struct in_addr nid, int stream) { 
+    struct lde_nbr *ln = NULL;
+    struct map map;
+
+    printf("%s\n", __func__);
+    struct lde_nbr *tmp = NULL;
+    RB_FOREACH(tmp, nbr_tree, &lde_nbrs) {
+        printf("%s, tmp->peerid: %u, tmp->id: %s, nid: %s\n",
+                __func__, tmp->peerid, inet_ntoa(tmp->id), inet_ntoa(nid));
+        if (tmp->id.s_addr == nid.s_addr) {
+            ln = tmp;
+            break;
+        }
+    }
+
+    printf("%s, fn->fec.u.ipv4.prefix: %s\n", __func__, inet_ntoa(fn->fec.u.ipv4.prefix));
+    if (stream == RECV) {
+        lde_fec2map(&(fn->fec), &map);
+        map.type = MAP_TYPE_MP2MP_UP;
+        map.msg_id = 0;
+        map.label = (fn->local_label)++;
+        map.requestid = 0;
+        map.pw_status = 0;
+        map.flags &= U_MAPPING_IN;
+
+        printf("%s, map.fec.prefix.prefix.v4: %s\n", __func__, inet_ntoa(map.fec.prefix.prefix.v4));
+        lde_check_mapping(&map, ln);
+    }
+    else if (stream == SEND) {
+        lde_send_labelmapping(ln, fn, 3);
+    }
+
+    return 0;
+}
 
 #else
 int lde_mp2mp_start(void) {
