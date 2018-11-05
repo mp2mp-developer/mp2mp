@@ -284,7 +284,7 @@ void
 nbr_del(struct nbr *nbr)
 {
 	log_debug("%s: lsr-id %s", __func__, inet_ntoa(nbr->id));
-
+    printf("%s, NBR_EVT_CLOSE_SESSION\n", __func__);
 	nbr_fsm(nbr, NBR_EVT_CLOSE_SESSION);
 #ifdef __OpenBSD__
 	pfkey_remove(nbr);
@@ -449,6 +449,7 @@ nbr_itimeout(struct thread *thread)
 {
 	struct nbr	*nbr = THREAD_ARG(thread);
 
+    printf("%s, NBR_EVT_CLOSE_SESSION\n", __func__);
 	log_debug("%s: lsr-id %s", __func__, inet_ntoa(nbr->id));
 
 	nbr_fsm(nbr, NBR_EVT_CLOSE_SESSION);

@@ -461,7 +461,8 @@ session_read(struct thread *thread)
 	    sizeof(tcp->rbuf->buf) - tcp->rbuf->wpos)) == -1) {
 		if (errno != EINTR && errno != EAGAIN) {
 			log_warn("%s: read error", __func__);
-			nbr_fsm(nbr, NBR_EVT_CLOSE_SESSION);
+            printf("%s, NBR_EVT_CLOSE_SESSION\n", __func__);
+            nbr_fsm(nbr, NBR_EVT_CLOSE_SESSION);
 			return (0);
 		}
 		/* retry read */
@@ -470,6 +471,7 @@ session_read(struct thread *thread)
 	if (n == 0) {
 		/* connection closed */
 		log_debug("%s: connection closed by remote end", __func__);
+        printf("%s, NBR_EVT_CLOSE_SESSION\n", __func__);
 		nbr_fsm(nbr, NBR_EVT_CLOSE_SESSION);
 		return (0);
 	}
@@ -629,8 +631,10 @@ session_write(struct thread *thread)
 	tcp->wbuf.ev = NULL;
 
 	if (msgbuf_write(&tcp->wbuf.wbuf) <= 0)
-		if (errno != EAGAIN && nbr)
+		if (errno != EAGAIN && nbr) {
+            printf("%s, NBR_EVT_CLOSE_SESSION\n", __func__);
 			nbr_fsm(nbr, NBR_EVT_CLOSE_SESSION);
+        }
 
 	if (nbr == NULL && !tcp->wbuf.wbuf.queued) {
 		/*
@@ -663,6 +667,7 @@ session_shutdown(struct nbr *nbr, uint32_t status, uint32_t msg_id,
 
 		send_notification_nbr(nbr, status, msg_id, msg_type);
 
+        printf("%s, NBR_EVT_CLOSE_SESSION\n", __func__);
 		nbr_fsm(nbr, NBR_EVT_CLOSE_SESSION);
 		break;
 	default:

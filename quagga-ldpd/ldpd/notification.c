@@ -205,6 +205,7 @@ recv_notification(struct nbr *nbr, char *buf, uint16_t len)
 		if (nbr->state == NBR_STA_OPENSENT)
 			nbr_start_idtimer(nbr);
 
+        printf("%s, NBR_EVT_CLOSE_SESSION\n", __func__);
 		nbr_fsm(nbr, NBR_EVT_CLOSE_SESSION);
 		return (-1);
 	}

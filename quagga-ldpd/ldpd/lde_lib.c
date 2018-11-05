@@ -585,6 +585,7 @@ lde_check_mapping(struct map *map, struct lde_nbr *ln)
 	/* LMp.9 */
 	me = (struct lde_map *)fec_find(&ln->recv_map, &fn->fec);
     if (map->type == MAP_TYPE_MP2MP_UP || map->type == MAP_TYPE_MP2MP_DOWN) {
+        printf("%s, testtttttttttttttttttttt\n", __func__);
         if (me == NULL)
             me = lde_map_add(ln, fn, 0);
         me->map = *map;
@@ -593,6 +594,7 @@ lde_check_mapping(struct map *map, struct lde_nbr *ln)
 
     if (me) {
 		/* LMp.10 */
+        printf("%s, me->map.label: %d, map->label: %d, lre: %d\n", __func__, me->map.label, map->label, lre);
 		if (me->map.label != map->label && lre == NULL) {
 			/* LMp.10a */
 			lde_send_labelrelease(ln, fn, me->map.label);
