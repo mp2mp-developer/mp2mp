@@ -208,8 +208,8 @@ int lde_mp2mp_start(void);
 int lde_mp2mp_up_proto_change(void);
 int lde_mp2mp_make_leaf_node(struct fec_node *fn);
 int lde_mp2mp_make_switch_node(struct fec_node *fn);
-int lde_mp2mp_make_switch_mid_node(void);
-int lde_mp2mp_make_root_node(void);
+int lde_mp2mp_make_switch_mid_node(struct fec_node *fn);
+int lde_mp2mp_make_root_node(struct fec_node *fn);
 int lde_mp2mp_create_d_mapping(struct fec_node *fn, struct in_addr nid, int stream);
 int lde_mp2mp_create_u_mapping(struct fec_node *fn, struct in_addr nid, int stream);
 

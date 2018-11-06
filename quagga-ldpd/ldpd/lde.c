@@ -1415,8 +1415,8 @@ int lde_mp2mp_start(void) {
     if (ldeconf->rtr_id.s_addr == LEAF) ref = lde_mp2mp_make_leaf_node(fn);
     else if (ldeconf->rtr_id.s_addr == SWITCH) ref = lde_mp2mp_make_switch_node(fn);
     else if (ldeconf->rtr_id.s_addr == SWITCH_MID1 || ldeconf->rtr_id.s_addr == SWITCH_MID2)
-        ref = lde_mp2mp_make_switch_mid_node();
-    else if (ldeconf->rtr_id.s_addr == ROOT) ref = lde_mp2mp_make_root_node();
+        ref = lde_mp2mp_make_switch_mid_node(fn);
+    else if (ldeconf->rtr_id.s_addr == ROOT) ref = lde_mp2mp_make_root_node(fn);
 
     return ref;
 }
@@ -1478,9 +1478,57 @@ int lde_mp2mp_make_switch_node(struct fec_node *fn) {
     return 0;
 }
 
-int lde_mp2mp_make_switch_mid_node() { return 0; }
+int lde_mp2mp_make_switch_mid_node(struct fec_node *fn) { 
+ 
+    printf("%s\n", __func__);
+    int ret = 0;
+    struct in_addr tmp1;
+    tmp1.s_addr = inet_addr("2.2.2.2");
+    lde_mp2mp_create_d_mapping(fn, tmp1, RECV);
+    if (ret != 0) {
+        log_notice("create d mapping error, erro line: %d", __LINE__);
+        return -1;
+    }
+    lde_mp2mp_create_u_mapping(fn, tmp1, SEND);
+    if (ret != 0) {
+        log_notice("create u mapping error, erro line: %d", __LINE__);
+        return -1;
+    }
 
-int lde_mp2mp_make_root_node() { return 0; }
+    struct in_addr tmp2;
+    tmp2.s_addr = inet_addr("5.5.5.5");
+    lde_mp2mp_create_d_mapping(fn, tmp2, SEND);
+    if (ret != 0) {
+        log_notice("create d mapping error, erro line: %d", __LINE__);
+        return -1;
+    }
+    lde_mp2mp_create_u_mapping(fn, tmp2, RECV);
+    if (ret != 0) {
+        log_notice("create u mapping error, erro line: %d", __LINE__);
+        return -1;
+    }
+   
+    return 0; 
+
+}
+
+int lde_mp2mp_make_root_node(struct fec_node *fn) {
+    int ret = 0;
+    struct in_addr tmp;
+    tmp.s_addr = inet_addr("3.3.3.3");
+    ret = lde_mp2mp_create_d_mapping(fn, tmp, RECV);
+    if (ret != 0) {
+        log_notice("create d mapping error, erro line: %d", __LINE__);
+        return -1;
+    }
+    ret = lde_mp2mp_create_u_mapping(fn, tmp, SEND);
+    if (ret != 0) {
+        log_notice("create u mapping error, erro line: %d", __LINE__);
+        return -1;
+    }
+  
+    return 0;
+}
 
 int lde_mp2mp_create_d_mapping(struct fec_node *fn, struct in_addr nid, int stream) {
     
