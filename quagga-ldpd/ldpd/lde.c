@@ -1428,25 +1428,52 @@ int lde_mp2mp_up_proto_change(void) {
 
 int lde_mp2mp_make_leaf_node(struct fec_node *fn) {
 
+    int ret = 0;
     struct in_addr tmp;
     tmp.s_addr = inet_addr("2.2.2.2");
-    lde_mp2mp_create_d_mapping(fn, tmp, SEND); //发出去的D-MAPPING
-    lde_mp2mp_create_u_mapping(fn, tmp, RECV); //收到的U-MAPPING
+    ret = lde_mp2mp_create_d_mapping(fn, tmp, SEND); //发出去的D-MAPPING
+    if (ret != 0) {
+        log_notice("create d mapping error, erro line: %d", __LINE__);
+        return -1;
+    }
+    ret = lde_mp2mp_create_u_mapping(fn, tmp, RECV); //收到的U-MAPPING
+    if (ret != 0) {
+        log_notice("create u mapping error, erro line: %d", __LINE__);
+        return -1;
+    }
+    
     return 0;
 }
 
 int lde_mp2mp_make_switch_node(struct fec_node *fn) { 
 
     printf("%s\n", __func__);
+    int ret = 0;
     struct in_addr tmp1;
     tmp1.s_addr = inet_addr("1.1.1.1");
     lde_mp2mp_create_d_mapping(fn, tmp1, RECV);
+    if (ret != 0) {
+        log_notice("create d mapping error, erro line: %d", __LINE__);
+        return -1;
+    }
     lde_mp2mp_create_u_mapping(fn, tmp1, SEND);
+    if (ret != 0) {
+        log_notice("create u mapping error, erro line: %d", __LINE__);
+        return -1;
+    }
 
     struct in_addr tmp2;
     tmp2.s_addr = inet_addr("3.3.3.3");
     lde_mp2mp_create_d_mapping(fn, tmp2, SEND);
+    if (ret != 0) {
+        log_notice("create d mapping error, erro line: %d", __LINE__);
+        return -1;
+    }
     lde_mp2mp_create_u_mapping(fn, tmp2, RECV);
+    if (ret != 0) {
+        log_notice("create u mapping error, erro line: %d", __LINE__);
+        return -1;
+    }
 
     return 0;
 }
@@ -1472,7 +1499,11 @@ int lde_mp2mp_create_d_mapping(struct fec_node *fn, struct in_addr nid, int stre
         }
     }
 
-    //TODO: if stream == SEND lde_send_labelmapping;  if stream == RECV lde_check_mapping;
+    if (ln == NULL) {
+        log_notice("neighbor %s is not exist, error line: %d", inet_ntoa(nid), __LINE__);
+        return -1;
+    }
+
     if (stream == SEND) {
         lde_send_labelmapping(ln, fn, 2);
     }
@@ -1506,6 +1537,11 @@ int lde_mp2mp_create_u_mapping(struct fec_node *fn, struct in_addr nid, int stre
             ln = tmp;
             break;
         }
+    }
+
+    if (ln == NULL) {
+        log_notice("neighbor %s is not exist, error line: %d", inet_ntoa(nid), __LINE__);
+        return -1;
     }
 
     printf("%s, fn->fec.u.ipv4.prefix: %s\n", __func__, inet_ntoa(fn->fec.u.ipv4.prefix));

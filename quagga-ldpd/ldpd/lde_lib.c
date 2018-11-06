@@ -190,14 +190,14 @@ mp2mp_uscb_dump(pid_t pid)
             if (me->map.type == MAP_TYPE_MP2MP_DOWN)  rtctl.mp2mp_flags |= D_MAPPING_IN;
             if (fn->data != NULL)  rtctl.mp2mp_flags |= FEC_MP2MP_EXT(fn)->mbb_flag;
 
-            printf("%s, mbb_flag: %u\n", __func__, FEC_MP2MP_EXT(fn)->mbb_flag);
+            if (fn->data != NULL) printf("%s, mbb_flag: %u\n", __func__, FEC_MP2MP_EXT(fn)->mbb_flag);
 			lde_imsg_compose_ldpe(IMSG_CTL_SHOW_MP2MP_USCB, 0, pid,
 			    &rtctl, sizeof(rtctl));
 			rtctl.first = 0;
             rtctl.mp2mp_flags = 0;
 		}
-		if (LIST_EMPTY(&fn->upstream)) {
-            if (me->map.type != MAP_TYPE_MP2MP_UP && me->map.type != MAP_TYPE_MP2MP_DOWN) continue;
+		
+        if (LIST_EMPTY(&fn->upstream)) {
 			rtctl.in_use = 0;
 			rtctl.nexthop.s_addr = INADDR_ANY;
 			rtctl.remote_label = NO_LABEL;
@@ -252,14 +252,13 @@ mp2mp_dscb_dump(pid_t pid)
             if (me->map.type == MAP_TYPE_MP2MP_DOWN)  rtctl.mp2mp_flags |= D_MAPPING_IN;
             if (fn->data != NULL)  rtctl.mp2mp_flags |= FEC_MP2MP_EXT(fn)->mbb_flag;
             printf("%s, rtctl.prefix.v4: %s, rtctl.prefixlen: %u\n", __func__, inet_ntoa(rtctl.prefix.v4), rtctl.prefixlen);
-//            printf("%s, mbb_flag: %u\n", __func__, FEC_MP2MP_EXT(fn)->mbb_flag);
+            if (fn->data != NULL)  printf("%s, mbb_flag: %u\n", __func__, FEC_MP2MP_EXT(fn)->mbb_flag);
 			lde_imsg_compose_ldpe(IMSG_CTL_SHOW_MP2MP_DSCB, 0, pid,
 			    &rtctl, sizeof(rtctl));
 			rtctl.first = 0;
             rtctl.mp2mp_flags = 0;
 		}
 		if (LIST_EMPTY(&fn->downstream)) {
-            if (me->map.type != MAP_TYPE_MP2MP_UP && me->map.type != MAP_TYPE_MP2MP_DOWN) continue;
 			rtctl.in_use = 0;
 			rtctl.nexthop.s_addr = INADDR_ANY;
 			rtctl.remote_label = NO_LABEL;
