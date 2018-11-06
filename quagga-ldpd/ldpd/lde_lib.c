@@ -567,7 +567,7 @@ lde_check_mapping(struct map *map, struct lde_nbr *ln)
 	lde_map2fec(map, ln->id, &fec);
 	fn = (struct fec_node *)fec_find(&ft, &fec);
 	if (fn == NULL)
-		fn = fec_add(&fec);
+		fn = fec_mp2mp_add(&fec);
     printf("%s, fec.prefix: %s, fn->fec.prefix: %s\n",
             __func__, inet_ntoa(fec.u.ipv4.prefix), inet_ntoa(fn->fec.u.ipv4.prefix));
 	/* LMp.1: first check if we have a pending request running */
@@ -591,6 +591,10 @@ lde_check_mapping(struct map *map, struct lde_nbr *ln)
         if (me == NULL)
             me = lde_map_add(ln, fn, 0);
         me->map = *map;
+        printf("%s, recive and save mapping\n", __func__);
+
+        if (map->type == MAP_TYPE_MP2MP_DOWN) lde_mp2mp_start();
+        if (map->type == MAP_TYPE_MP2MP_UP) lde_mp2mp_process_u_mapping(fn);
         return;
     }
 

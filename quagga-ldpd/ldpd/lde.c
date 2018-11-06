@@ -52,6 +52,8 @@ static void		 lde_address_list_free(struct lde_nbr *);
 
 RB_GENERATE(nbr_tree, lde_nbr, entry, lde_nbr_compare)
 
+uint32_t mp2mp_label = 100;
+
 struct ldpd_conf	*ldeconf;
 struct nbr_tree		 lde_nbrs = RB_INITIALIZER(&lde_nbrs);
 
@@ -868,6 +870,7 @@ lde_send_labelmapping(struct lde_nbr *ln, struct fec_node *fn, int single)
 	}
 	map.label = fn->local_label;    //add for mp2mp, 为了区分标签让它递增
                                     //呵呵了，可用的是0-3，16—MAX，我给递增就进入4-15的范围，解码失败导致session down
+    if (single == 2 || single == 3)  map.label = mp2mp_label++;
 
 	/* SL.6: is there a pending request for this mapping? */
 	lre = (struct lde_req *)fec_find(&ln->recv_req, &fn->fec);
@@ -1436,12 +1439,13 @@ int lde_mp2mp_make_leaf_node(struct fec_node *fn) {
         log_notice("create d mapping error, erro line: %d", __LINE__);
         return -1;
     }
+/*
     ret = lde_mp2mp_create_u_mapping(fn, tmp, RECV); //收到的U-MAPPING
     if (ret != 0) {
         log_notice("create u mapping error, erro line: %d", __LINE__);
         return -1;
     }
-    
+*/  
     return 0;
 }
 
@@ -1449,6 +1453,7 @@ int lde_mp2mp_make_switch_node(struct fec_node *fn) {
 
     printf("%s\n", __func__);
     int ret = 0;
+/*
     struct in_addr tmp1;
     tmp1.s_addr = inet_addr("1.1.1.1");
     lde_mp2mp_create_d_mapping(fn, tmp1, RECV);
@@ -1461,7 +1466,7 @@ int lde_mp2mp_make_switch_node(struct fec_node *fn) {
         log_notice("create u mapping error, erro line: %d", __LINE__);
         return -1;
     }
-
+*/
     struct in_addr tmp2;
     tmp2.s_addr = inet_addr("3.3.3.3");
     lde_mp2mp_create_d_mapping(fn, tmp2, SEND);
@@ -1469,12 +1474,13 @@ int lde_mp2mp_make_switch_node(struct fec_node *fn) {
         log_notice("create d mapping error, erro line: %d", __LINE__);
         return -1;
     }
+/*
     lde_mp2mp_create_u_mapping(fn, tmp2, RECV);
     if (ret != 0) {
         log_notice("create u mapping error, erro line: %d", __LINE__);
         return -1;
     }
-
+*/
     return 0;
 }
 
@@ -1482,6 +1488,7 @@ int lde_mp2mp_make_switch_mid_node(struct fec_node *fn) {
  
     printf("%s\n", __func__);
     int ret = 0;
+ /*
     struct in_addr tmp1;
     tmp1.s_addr = inet_addr("2.2.2.2");
     lde_mp2mp_create_d_mapping(fn, tmp1, RECV);
@@ -1494,7 +1501,7 @@ int lde_mp2mp_make_switch_mid_node(struct fec_node *fn) {
         log_notice("create u mapping error, erro line: %d", __LINE__);
         return -1;
     }
-
+*/
     struct in_addr tmp2;
     tmp2.s_addr = inet_addr("5.5.5.5");
     lde_mp2mp_create_d_mapping(fn, tmp2, SEND);
@@ -1502,25 +1509,29 @@ int lde_mp2mp_make_switch_mid_node(struct fec_node *fn) {
         log_notice("create d mapping error, erro line: %d", __LINE__);
         return -1;
     }
+/*
     lde_mp2mp_create_u_mapping(fn, tmp2, RECV);
     if (ret != 0) {
         log_notice("create u mapping error, erro line: %d", __LINE__);
         return -1;
     }
-   
+*/ 
     return 0; 
 
 }
 
 int lde_mp2mp_make_root_node(struct fec_node *fn) {
     int ret = 0;
+ 
     struct in_addr tmp;
     tmp.s_addr = inet_addr("3.3.3.3");
+/*
     ret = lde_mp2mp_create_d_mapping(fn, tmp, RECV);
     if (ret != 0) {
         log_notice("create d mapping error, erro line: %d", __LINE__);
         return -1;
     }
+*/
     ret = lde_mp2mp_create_u_mapping(fn, tmp, SEND);
     if (ret != 0) {
         log_notice("create u mapping error, erro line: %d", __LINE__);
@@ -1597,7 +1608,7 @@ int lde_mp2mp_create_u_mapping(struct fec_node *fn, struct in_addr nid, int stre
         lde_fec2map(&(fn->fec), &map);
         map.type = MAP_TYPE_MP2MP_UP;
         map.msg_id = 0;
-        map.label = (fn->local_label)++;
+        map.label = mp2mp_label++;
         map.requestid = 0;
         map.pw_status = 0;
         map.flags &= U_MAPPING_IN;
@@ -1612,6 +1623,21 @@ int lde_mp2mp_create_u_mapping(struct fec_node *fn, struct in_addr nid, int stre
     return 0;
 }
 
+int lde_mp2mp_process_u_mapping(struct fec_node *fn) {
+    struct lde_map *me; 
+
+    if (LIST_EMPTY(&fn->downstream)) {
+        log_notice("%s, no u-mapping to reply", __func__);        
+        return -1;
+    }
+    LIST_FOREACH(me, &fn->downstream, entry) {
+        if (me->map.type == MAP_TYPE_MP2MP_DOWN) {
+            lde_mp2mp_create_u_mapping(fn, me->nexthop->id, SEND);
+        }
+    }
+
+    return 0;
+}
 #else
 int lde_mp2mp_start(void) {
     printf("%s\n", __func__);

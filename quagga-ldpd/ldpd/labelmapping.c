@@ -398,6 +398,9 @@ recv_labelmessage(struct nbr *nbr, char *buf, uint16_t len, uint16_t type)
 		if (me->map.flags & F_MAP_REQ_ID)
 			me->map.requestid = reqid;
 
+    
+        printf("%s, map->fec.prefix.prefix.v4 :%s, map->type: %u, map->msg_id: %u, map->label: %u\n",
+                __func__, inet_ntoa(me->map.fec.prefix.prefix.v4), me->map.type, me->map.msg_id, me->map.label);
 		debug_msg_recv("%s: lsr-id %s fec %s label %s", msg_name(type),
 		    inet_ntoa(nbr->id), log_map(&me->map),
 		    log_label(me->map.label));
@@ -607,8 +610,6 @@ tlv_decode_fec_elm(struct nbr *nbr, struct ldp_msg *msg, char *buf,
 	map->type = *buf;
 	off += sizeof(uint8_t);
 
-	printf("%s, map->fec.prefix.prefix.v4 :%s, map->type: %u, map->msg_id: %u, map->label: %u\n",
-            __func__, inet_ntoa(map->fec.prefix.prefix.v4), map->type, map->msg_id, map->label);
     switch (map->type) {
 	case MAP_TYPE_WILDCARD:
 		if (len == FEC_ELM_WCARD_LEN)
@@ -620,6 +621,8 @@ tlv_decode_fec_elm(struct nbr *nbr, struct ldp_msg *msg, char *buf,
 		}
 		break;
 	case MAP_TYPE_PREFIX:
+    case MAP_TYPE_MP2MP_UP:
+    case MAP_TYPE_MP2MP_DOWN:
 		if (len < FEC_ELM_PREFIX_MIN_LEN) {
 			printf("%s, %d\n", __func__, __LINE__);session_shutdown(nbr, S_BAD_TLV_LEN, msg->id,
 			    msg->type);
@@ -653,6 +656,8 @@ tlv_decode_fec_elm(struct nbr *nbr, struct ldp_msg *msg, char *buf,
 		memcpy(&map->fec.prefix.prefix, buf + off,
 		    PREFIX_SIZE(map->fec.prefix.prefixlen));
 
+        printf("%s, map->fec.prefix.prefix.v4 :%s, map->type: %u, map->msg_id: %u\n",
+                __func__, inet_ntoa(map->fec.prefix.prefix.v4), map->type, map->msg_id);
 		return (off + PREFIX_SIZE(map->fec.prefix.prefixlen));
 	case MAP_TYPE_PWID:
 		if (len < FEC_PWID_ELM_MIN_LEN) {

@@ -212,6 +212,7 @@ int lde_mp2mp_make_switch_mid_node(struct fec_node *fn);
 int lde_mp2mp_make_root_node(struct fec_node *fn);
 int lde_mp2mp_create_d_mapping(struct fec_node *fn, struct in_addr nid, int stream);
 int lde_mp2mp_create_u_mapping(struct fec_node *fn, struct in_addr nid, int stream);
+int lde_mp2mp_process_u_mapping(struct fec_node *fn);
 
 /* l2vpn.c */
 struct l2vpn	*l2vpn_new(const char *);
