@@ -667,7 +667,8 @@ session_shutdown(struct nbr *nbr, uint32_t status, uint32_t msg_id,
 
 		send_notification_nbr(nbr, status, msg_id, msg_type);
 
-        printf("%s, NBR_EVT_CLOSE_SESSION\n", __func__);
+        printf("%s, NBR_EVT_CLOSE_SESSION, nbr-id: %s, msg_id: %d, msg_type: %d\n",
+                __func__, inet_ntoa(nbr->id), msg_id, msg_type);
 		nbr_fsm(nbr, NBR_EVT_CLOSE_SESSION);
 		break;
 	default:
