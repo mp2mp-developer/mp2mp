@@ -544,6 +544,7 @@ struct ctl_rt {
 	uint8_t			 flags;
 	uint8_t			 in_use;
 	int			 first;
+    uint8_t     mp2mp_flags;
 };
 
 struct ctl_pw {

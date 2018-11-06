@@ -874,13 +874,13 @@ show_mp2mp_uscb_msg(struct vty *vty, struct imsg *imsg)
 		}
         char mt[20] = "";
         char mbb[20] = "";
-        printf("%s, rt->flags: %u\n", __func__, rt->flags);
-        if ((rt->flags & U_MAPPING_IN) == U_MAPPING_IN) strcpy(mt, "U-MAPPING");
-        else if ((rt->flags & D_MAPPING_IN) == D_MAPPING_IN) strcpy(mt, "D-MAPPING");
-        if ((rt->flags & NONE) == NONE) strcpy(mbb, "NONE");
-        else if ((rt->flags & SEND_MAPPING) == SEND_MAPPING) strcpy(mbb, "SEND_MAPPING");
-        else if ((rt->flags & WAIT_NOTIFI) == WAIT_NOTIFI) strcpy(mbb, "WAIT_NOTIFICATION");
-        else if ((rt->flags & SWITCH_DELAY) == SWITCH_DELAY) strcpy(mbb, "SWITCH_DELAY");
+        printf("%s, rt->mp2mp_flags: %u\n", __func__, rt->mp2mp_flags);
+        if ((rt->mp2mp_flags & U_MAPPING_IN) == U_MAPPING_IN) strcpy(mt, "U-MAPPING");
+        else if ((rt->mp2mp_flags & D_MAPPING_IN) == D_MAPPING_IN) strcpy(mt, "D-MAPPING");
+        if ((rt->mp2mp_flags & NONE) == NONE) strcpy(mbb, "NONE");
+        else if ((rt->mp2mp_flags & SEND_MAPPING) == SEND_MAPPING) strcpy(mbb, "SEND_MAPPING");
+        else if ((rt->mp2mp_flags & WAIT_NOTIFI) == WAIT_NOTIFI) strcpy(mbb, "WAIT_NOTIFICATION");
+        else if ((rt->mp2mp_flags & SWITCH_DELAY) == SWITCH_DELAY) strcpy(mbb, "SWITCH_DELAY");
 		if (rt->remote_label != NO_LABEL)
 			vty_out(vty, "%12s%-20s%-20s%-20s    %-20s%s", "", inet_ntoa(rt->nexthop),
 			    log_label(rt->remote_label), mt, mbb, VTY_NEWLINE);
@@ -929,9 +929,9 @@ show_mp2mp_dscb_msg(struct vty *vty, struct imsg *imsg)
 				    VTY_NEWLINE);
 		}
         char mt[20] = "";
-        printf("%s, rt->flags: %u\n", __func__, rt->flags);
-        if ((rt->flags & U_MAPPING_IN) == U_MAPPING_IN) strcpy(mt, "U-MAPPING");
-        else if ((rt->flags & D_MAPPING_IN) == D_MAPPING_IN) strcpy(mt, "D-MAPPING");
+        printf("%s, rt->mp2mp_flags: %u\n", __func__, rt->mp2mp_flags);
+        if ((rt->mp2mp_flags & U_MAPPING_IN) == U_MAPPING_IN) strcpy(mt, "U-MAPPING");
+        else if ((rt->mp2mp_flags & D_MAPPING_IN) == D_MAPPING_IN) strcpy(mt, "D-MAPPING");
 		if (rt->remote_label != NO_LABEL)
 			vty_out(vty, "%12s%-20s%-20s%-20s%s", "", inet_ntoa(rt->nexthop),
 			    log_label(rt->remote_label), mt, VTY_NEWLINE);

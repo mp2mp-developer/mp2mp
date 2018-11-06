@@ -77,6 +77,8 @@ send_labelmessage(struct nbr *nbr, uint16_t type, struct mapping_head *mh)
 			msg_size += FEC_ELM_WCARD_LEN;
 			break;
 		case MAP_TYPE_PREFIX:
+        case MAP_TYPE_MP2MP_UP:
+        case MAP_TYPE_MP2MP_DOWN:
 			msg_size += FEC_ELM_PREFIX_MIN_LEN +
 			    PREFIX_SIZE(me->map.fec.prefix.prefixlen);
 			break;
@@ -182,7 +184,8 @@ recv_labelmessage(struct nbr *nbr, char *buf, uint16_t len, uint16_t type)
 		if ((tlen = tlv_decode_fec_elm(nbr, &msg, buf, feclen,
 		    &map)) == -1)
 			goto err;
-		if (map.type == MAP_TYPE_PWID &&
+
+        if (map.type == MAP_TYPE_PWID &&
 		    !(map.flags & F_MAP_PW_ID) &&
 		    type != MSG_TYPE_LABELWITHDRAW &&
 		    type != MSG_TYPE_LABELRELEASE) {
@@ -537,6 +540,8 @@ gen_fec_tlv(struct ibuf *buf, struct map *map)
 		err |= ibuf_add(buf, &map->type, sizeof(map->type));
 		break;
 	case MAP_TYPE_PREFIX:
+    case MAP_TYPE_MP2MP_UP:
+    case MAP_TYPE_MP2MP_DOWN:
 		len = PREFIX_SIZE(map->fec.prefix.prefixlen);
 		ft.length = htons(sizeof(map->type) + sizeof(family) +
 		    sizeof(map->fec.prefix.prefixlen) + len);
@@ -602,7 +607,9 @@ tlv_decode_fec_elm(struct nbr *nbr, struct ldp_msg *msg, char *buf,
 	map->type = *buf;
 	off += sizeof(uint8_t);
 
-	switch (map->type) {
+	printf("%s, map->fec.prefix.prefix.v4 :%s, map->type: %u, map->msg_id: %u, map->label: %u\n",
+            __func__, inet_ntoa(map->fec.prefix.prefix.v4), map->type, map->msg_id, map->label);
+    switch (map->type) {
 	case MAP_TYPE_WILDCARD:
 		if (len == FEC_ELM_WCARD_LEN)
 			return (off);
