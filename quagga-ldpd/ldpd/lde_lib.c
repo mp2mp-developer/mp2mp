@@ -949,5 +949,10 @@ fec_mp2mp_add(struct fec *fec)
         return NULL;    
     }
     FEC_MP2MP_EXT(fn)->mbb_flag |= SEND_MAPPING;    
+    FEC_MP2MP_EXT(fn)->hold_time = 5;
+    FEC_MP2MP_EXT(fn)->switch_delay_time = 5;
+    FEC_MP2MP_EXT(fn)->hold_timer = NULL;
+    FEC_MP2MP_EXT(fn)->switch_delay_timer = NULL;
+
     return fn;
 }

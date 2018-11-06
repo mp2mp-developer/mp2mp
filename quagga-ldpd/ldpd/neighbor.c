@@ -402,6 +402,7 @@ nbr_start_ktimer(struct nbr *nbr)
 
 	/* send three keepalives per period */
 	secs = nbr->keepalive / KEEPALIVE_PER_PERIOD;
+    log_notice("%s, nbr->keepalive: %u, secs: %d\n", __func__, nbr->keepalive, secs);
 	THREAD_TIMER_OFF(nbr->keepalive_timer);
 	nbr->keepalive_timer = thread_add_timer(master, nbr_ktimer, nbr, secs);
 }

@@ -879,7 +879,8 @@ show_mp2mp_uscb_msg(struct vty *vty, struct imsg *imsg)
         else if ((rt->mp2mp_flags & D_MAPPING_IN) == D_MAPPING_IN) strcpy(mt, "D-MAPPING");
         if ((rt->mp2mp_flags & NONE) == NONE) strcpy(mbb, "NONE");
         else if ((rt->mp2mp_flags & SEND_MAPPING) == SEND_MAPPING) strcpy(mbb, "SEND_MAPPING");
-        else if ((rt->mp2mp_flags & WAIT_NOTIFI) == WAIT_NOTIFI) strcpy(mbb, "WAIT_NOTIFICATION");
+        else if ((rt->mp2mp_flags & SEND_MBB_MAPPING) == SEND_MBB_MAPPING) strcpy(mbb, "SEND_MBB_MAPPING");
+        else if ((rt->mp2mp_flags & RECV_NOTIFI) == RECV_NOTIFI) strcpy(mbb, "RECV_NOTIFICATION");
         else if ((rt->mp2mp_flags & SWITCH_DELAY) == SWITCH_DELAY) strcpy(mbb, "SWITCH_DELAY");
 		if (rt->remote_label != NO_LABEL)
 			vty_out(vty, "%12s%-20s%-20s%-20s    %-20s%s", "", inet_ntoa(rt->nexthop),

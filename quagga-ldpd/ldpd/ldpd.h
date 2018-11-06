@@ -52,9 +52,10 @@
 #define	F_REDISTRIBUTED		0x0040
 
 //mp2mp mbb status
-#define NONE             0x01
-#define SEND_MAPPING     0x02
-#define WAIT_NOTIFI      0x04
+#define NONE             0x00
+#define SEND_MAPPING     0x01
+#define SEND_MBB_MAPPING    0x02
+#define RECV_NOTIFI      0x04
 #define SWITCH_DELAY     0x08
 
 //mp2mp inner flags

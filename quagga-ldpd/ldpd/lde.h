@@ -131,8 +131,10 @@ struct fec_node {
 
 struct fec_mp2mp_ext {
     uint8_t mbb_flag;
-    //TODO:hold_timer
-    //TODO:switch_delay_timer
+    uint16_t hold_time;
+    uint16_t switch_delay_time;
+    struct thread *hold_timer;
+    struct thread *switch_delay_timer;
 };
 
 #define LDE_GC_INTERVAL 300
@@ -213,6 +215,9 @@ int lde_mp2mp_make_root_node(struct fec_node *fn);
 int lde_mp2mp_create_d_mapping(struct fec_node *fn, struct in_addr nid, int stream);
 int lde_mp2mp_create_u_mapping(struct fec_node *fn, struct in_addr nid, int stream);
 int lde_mp2mp_process_u_mapping(struct fec_node *fn);
+int lde_mp2mp_create_mbb_d_mapping(struct fec_node *fn, struct in_addr nid, int stream);
+int lde_mp2mp_start_mbb_hold_timer(struct fec_node *fn);
+int lde_mp2mp_hold_timeout(struct thread *thread);
 
 /* l2vpn.c */
 struct l2vpn	*l2vpn_new(const char *);

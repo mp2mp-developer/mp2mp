@@ -842,7 +842,7 @@ lde_send_labelmapping(struct lde_nbr *ln, struct fec_node *fn, int single)
 	lde_fec2map(&fn->fec, &map);
 	switch (fn->fec.type) {
 	case FEC_TYPE_IPV4:
-        if (single == 2) map.type = MAP_TYPE_MP2MP_DOWN;
+        if (single == 2 || single == 4) map.type = MAP_TYPE_MP2MP_DOWN;
         if (single == 3) map.type = MAP_TYPE_MP2MP_UP;
 		if (!ln->v4_enabled)
 			return;
@@ -870,9 +870,9 @@ lde_send_labelmapping(struct lde_nbr *ln, struct fec_node *fn, int single)
 	}
 	map.label = fn->local_label;    //add for mp2mp, 为了区分标签让它递增
                                     //呵呵了，可用的是0-3，16—MAX，我给递增就进入4-15的范围，解码失败导致session down
-    if (single == 2 || single == 3)  map.label = mp2mp_label++;
+    if (single == 2 || single == 3 || single == 4)  map.label = mp2mp_label++;
 
-	/* SL.6: is there a pending request for this mapping? */
+    /* SL.6: is there a pending request for this mapping? */
 	lre = (struct lde_req *)fec_find(&ln->recv_req, &fn->fec);
 	if (lre) {
 		/* set label request msg id in the mapping response. */
@@ -888,7 +888,9 @@ lde_send_labelmapping(struct lde_nbr *ln, struct fec_node *fn, int single)
         //add for mbb
         printf("%s, add SEND_MAPPING\n", __func__);
         if (FEC_MP2MP_EXT(fn)->mbb_flag == NONE)
-            FEC_MP2MP_EXT(fn)->mbb_flag  &= SEND_MAPPING;
+            FEC_MP2MP_EXT(fn)->mbb_flag &= SEND_MAPPING;
+        if (single == 4)
+            FEC_MP2MP_EXT(fn)->mbb_flag &= SEND_MBB_MAPPING;
     }
 
 	/* SL.4: send label mapping */
@@ -1424,8 +1426,47 @@ int lde_mp2mp_start(void) {
     return ref;
 }
 
+int lde_mp2mp_hold_timeout(struct thread *thread) {
+    struct fec_node *fn = THREAD_ARG(thread);
+    if (fn == NULL || fn->data == NULL) {
+        printf("%s, fn is null or fn is not mp2mp\n", __func__);
+        return -1;
+    }
+
+    printf("%s\n", __func__);
+
+    FEC_MP2MP_EXT(fn)->mbb_flag &= RECV_NOTIFI;
+    return 0;
+}
+
+int lde_mp2mp_start_mbb_hold_timer(struct fec_node *fn) {
+    THREAD_TIMER_OFF(FEC_MP2MP_EXT(fn)->hold_timer);
+    FEC_MP2MP_EXT(fn)->hold_timer = thread_add_timer(master, lde_mp2mp_hold_timeout, fn, FEC_MP2MP_EXT(fn)->hold_time);
+    return 0;
+}
+
 int lde_mp2mp_up_proto_change(void) {
     printf("%s, echo\n", __func__);
+
+    struct fec *f = NULL;
+    struct fec_node *fn = NULL;
+    struct fec_node *tmp = NULL;
+
+    RB_FOREACH(f, fec_tree, &ft) {
+		tmp = (struct fec_node *)f;
+        if (tmp->data != NULL && tmp->fec.type == FEC_TYPE_IPV4) fn = tmp;
+        break;
+    }
+    if(fn == NULL) {
+        printf("%s, fail to mbb\n", __func__);
+        return -1;
+    }
+
+    struct in_addr nid;
+    nid.s_addr = inet_addr("4.4.4.4");
+    lde_mp2mp_create_mbb_d_mapping(fn, nid, SEND);
+    lde_mp2mp_start_mbb_hold_timer(fn);
+
     return 0;
 }
 
@@ -1538,6 +1579,33 @@ int lde_mp2mp_make_root_node(struct fec_node *fn) {
         return -1;
     }
   
+    return 0;
+}
+
+int lde_mp2mp_create_mbb_d_mapping(struct fec_node *fn, struct in_addr nid, int stream) {
+    
+    struct lde_nbr *ln = NULL;
+    printf("%s, nid: %s, stream: %d\n", __func__, inet_ntoa(nid), stream);
+
+    struct lde_nbr *tmp = NULL;
+    RB_FOREACH(tmp, nbr_tree, &lde_nbrs) {
+        printf("%s, tmp->peerid: %u, tmp->id: %s, nid: %s\n",
+                __func__, tmp->peerid, inet_ntoa(tmp->id), inet_ntoa(nid));
+        if (tmp->id.s_addr == nid.s_addr) {
+            ln = tmp;
+            break;
+        }
+    }
+
+    if (ln == NULL) {
+        log_notice("neighbor %s is not exist, error line: %d", inet_ntoa(nid), __LINE__);
+        return -1;
+    }
+
+    if (stream == SEND) {
+        lde_send_labelmapping(ln, fn, 4);
+    }
+
     return 0;
 }
 
