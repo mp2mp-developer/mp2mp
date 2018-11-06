@@ -866,7 +866,8 @@ lde_send_labelmapping(struct lde_nbr *ln, struct fec_node *fn, int single)
 		}
 		break;
 	}
-	map.label = (fn->local_label)++;    //add for mp2mp, 为了区分标签让它递增
+	map.label = fn->local_label;    //add for mp2mp, 为了区分标签让它递增
+                                    //呵呵了，可用的是0-3，16—MAX，我给递增就进入4-15的范围，解码失败导致session down
 
 	/* SL.6: is there a pending request for this mapping? */
 	lre = (struct lde_req *)fec_find(&ln->recv_req, &fn->fec);
