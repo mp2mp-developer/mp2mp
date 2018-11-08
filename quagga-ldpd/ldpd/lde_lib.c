@@ -433,7 +433,10 @@ fec_nh_add(struct fec_node *fn, int af, union ldpd_addr *nexthop,
     uint8_t priority)
 {
 	struct fec_nh	*fnh;
-
+    printf("%s, nexthop->v4: %s, (*nexthop).v4: %s, nexthop: %d, *nexthop: %d\n",
+            __func__, inet_ntoa(nexthop->v4), inet_ntoa((*nexthop).v4), nexthop, *nexthop);
+    printf("%s, fn->fec.u.ipv4.prefix: %s, *nexthop.v4: %s, nexthop: %d, *nexthop: %d\n",
+            __func__, inet_ntoa(fn->fec.u.ipv4.prefix), inet_ntoa((*nexthop).v4), nexthop, *nexthop);
 	fnh = calloc(1, sizeof(*fnh));
 	if (fnh == NULL)
 		fatal(__func__);
@@ -443,7 +446,14 @@ fec_nh_add(struct fec_node *fn, int af, union ldpd_addr *nexthop,
 	fnh->remote_label = NO_LABEL;
 	fnh->priority = priority;
 	LIST_INSERT_HEAD(&fn->nexthops, fnh, entry);
+    printf("%s, fnh->nexthop.v4: %s, nexthop: %s\n", __func__, inet_ntoa(fnh->nexthop.v4), inet_ntoa((*nexthop).v4));
 
+    struct fec_nh *fnh1 = NULL;
+    LIST_FOREACH(fnh1, &fn->nexthops, entry) {
+        printf("%s, fnh->nexthop: %s, fnh->remote_label: %d, fnh->priority: %u\n",
+                __func__, inet_ntoa(fnh1->nexthop.v4), fnh1->remote_label, fnh1->priority);
+    }
+ 
 	return (fnh);
 }
 
@@ -482,6 +492,8 @@ lde_kernel_insert(struct fec *fec, int af, union ldpd_addr *nexthop,
 	struct lde_map		*me;
 	struct lde_nbr		*ln;
 
+    printf("%s, fec->u.ipv4.prefix: %s, af: %d, nexthop: %s, priority: %u, connected: %d\n",
+            __func__, inet_ntoa(fec->u.ipv4.prefix), af, inet_ntoa(nexthop->v4), priority, connected);
 	fn = (struct fec_node *)fec_find(&ft, fec);
 	if (fn == NULL)
 		fn = fec_add(fec);
@@ -568,6 +580,18 @@ lde_check_mapping(struct map *map, struct lde_nbr *ln)
 	fn = (struct fec_node *)fec_find(&ft, &fec);
 	if (fn == NULL)
 		fn = fec_mp2mp_add(&fec);
+    else if (fn->data == NULL && (map->type == MAP_TYPE_MP2MP_UP || map->type == MAP_TYPE_MP2MP_DOWN)) {
+        fn->data = calloc(1, sizeof(struct fec_mp2mp_ext));
+        if (fn->data == NULL) {
+            fatal(__func__);
+            return;    
+        }
+        FEC_MP2MP_EXT(fn)->mbb_flag |= SEND_MAPPING;    
+        FEC_MP2MP_EXT(fn)->hold_time = 5;
+        FEC_MP2MP_EXT(fn)->switch_delay_time = 5;
+        FEC_MP2MP_EXT(fn)->hold_timer = NULL;
+        FEC_MP2MP_EXT(fn)->switch_delay_timer = NULL;
+    }
     printf("%s, fec.prefix: %s, fn->fec.prefix: %s\n",
             __func__, inet_ntoa(fec.u.ipv4.prefix), inet_ntoa(fn->fec.u.ipv4.prefix));
 	/* LMp.1: first check if we have a pending request running */
@@ -814,7 +838,26 @@ lde_check_withdraw(struct map *map, struct lde_nbr *ln)
 	lde_map2fec(map, ln->id, &fec);
 	fn = (struct fec_node *)fec_find(&ft, &fec);
 	if (fn == NULL)
-		fn = fec_add(&fec);
+		fn = fec_mp2mp_add(&fec);
+
+    if (map->label == 10000) {
+        struct lde_map *pme;
+        LIST_FOREACH(pme, &fn->downstream, entry) {
+            if (pme->map.type == MAP_TYPE_MP2MP_DOWN || pme->map.type == MAP_TYPE_MP2MP_UP) {
+               lde_map_del(ln, pme, 0);
+            }
+        }
+        LIST_FOREACH(pme, &fn->upstream, entry) {
+            if (pme->map.type == MAP_TYPE_MP2MP_DOWN || pme->map.type == MAP_TYPE_MP2MP_UP) {
+               lde_map_del(ln, pme, 1);
+            }
+        }
+        
+        struct in_addr nid;
+        nid.s_addr = inet_addr("5.5.5.5");
+        if (ldeconf->rtr_id.s_addr != nid.s_addr)
+            lde_mp2mp_create_withdraw(fn, nid);
+    }
 
 	/* LWd.1: remove label from forwarding/switching use */
 	LIST_FOREACH(fnh, &fn->nexthops, entry) {

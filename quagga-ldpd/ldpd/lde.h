@@ -218,6 +218,7 @@ int lde_mp2mp_process_u_mapping(struct fec_node *fn);
 int lde_mp2mp_create_mbb_d_mapping(struct fec_node *fn, struct in_addr nid, int stream);
 int lde_mp2mp_start_mbb_hold_timer(struct fec_node *fn);
 int lde_mp2mp_hold_timeout(struct thread *thread);
+int lde_mp2mp_create_withdraw(struct fec_node *fn, struct in_addr nid);
 
 /* l2vpn.c */
 struct l2vpn	*l2vpn_new(const char *);

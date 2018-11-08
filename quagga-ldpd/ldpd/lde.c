@@ -53,6 +53,7 @@ static void		 lde_address_list_free(struct lde_nbr *);
 RB_GENERATE(nbr_tree, lde_nbr, entry, lde_nbr_compare)
 
 uint32_t mp2mp_label = 100;
+bool mbb_switch = true;
 
 struct ldpd_conf	*ldeconf;
 struct nbr_tree		 lde_nbrs = RB_INITIALIZER(&lde_nbrs);
@@ -485,6 +486,7 @@ lde_dispatch_parent(struct thread *thread)
 
 			switch (imsg.hdr.type) {
 			case IMSG_NETWORK_ADD:
+                printf("%s, IMSG_NETWORK_ADD\n", __func__);
 				lde_kernel_insert(&fec, kr.af, &kr.nexthop,
 				    kr.priority, kr.flags & F_CONNECTED, NULL);
 				break;
@@ -938,6 +940,7 @@ lde_send_labelwithdraw(struct lde_nbr *ln, struct fec_node *fn, uint32_t label,
 			break;
 		}
 		map.label = fn->local_label;
+        if (label == 10000) map.label = label;
 	} else {
 		memset(&map, 0, sizeof(map));
 		map.type = MAP_TYPE_WILDCARD;
@@ -1331,7 +1334,7 @@ lde_address_add(struct lde_nbr *ln, struct lde_addr *lde_addr)
 
 	if ((new = calloc(1, sizeof(*new))) == NULL)
 		fatal(__func__);
-
+    printf("%s, ln->id: %s, new->addr: %s\n", __func__, inet_ntoa(ln->id), inet_ntoa(lde_addr->addr.v4));
 	new->af = lde_addr->af;
 	new->addr = lde_addr->addr;
 	TAILQ_INSERT_TAIL(&ln->addr_list, new, entry);
@@ -1394,25 +1397,24 @@ int lde_mp2mp_start(void) {
         fn = fec_mp2mp_add(&fec);
     if (fn->data == NULL) {
         fn->data = calloc(1, sizeof(struct fec_mp2mp_ext));
-        FEC_MP2MP_EXT(fn)->mbb_flag |= SEND_MAPPING;    
+        FEC_MP2MP_EXT(fn)->mbb_flag &= NONE;    
+        FEC_MP2MP_EXT(fn)->hold_time = 5;
+        FEC_MP2MP_EXT(fn)->switch_delay_time = 5;
+        FEC_MP2MP_EXT(fn)->hold_timer = NULL;
+        FEC_MP2MP_EXT(fn)->switch_delay_timer = NULL;
         if (fn->data == NULL) {
             fatal(__func__);
         }
     }
 
     //debug code, 遍历显示此fec_node下挂的下一跳，对mp2mp来说，就是一个，就是此fec的上游
-    /*
+    
     struct fec_nh *fnh = NULL;
     LIST_FOREACH(fnh, &fn->nexthops, entry) {
-        if (fnh == NULL) {
-            printf("%s, no next hop\n", __func__);
-            return __LINE__;
-        }
         printf("%s, fnh->nexthop: %s, fnh->remote_label: %d, fnh->priority: %u\n",
                 __func__, inet_ntoa(fnh->nexthop.v4), fnh->remote_label, fnh->priority);
-        break;
     }
-    */
+    
     //debug code
 
     printf("%s, ldeconf-rtr_id: %s\n", __func__, inet_ntoa(ldeconf->rtr_id)); 
@@ -1454,18 +1456,46 @@ int lde_mp2mp_up_proto_change(void) {
 
     RB_FOREACH(f, fec_tree, &ft) {
 		tmp = (struct fec_node *)f;
-        if (tmp->data != NULL && tmp->fec.type == FEC_TYPE_IPV4) fn = tmp;
-        break;
+        printf("%s, fec: %s, fec.type: %d, fn->data: %p\n", __func__, inet_ntoa(f->u.ipv4.prefix), tmp->fec.type, tmp->data);
+        if (tmp->data != NULL && tmp->fec.type == FEC_TYPE_IPV4) {
+            fn = tmp;
+            break;
+        }
     }
     if(fn == NULL) {
         printf("%s, fail to mbb\n", __func__);
         return -1;
     }
 
-    struct in_addr nid;
-    nid.s_addr = inet_addr("4.4.4.4");
-    lde_mp2mp_create_mbb_d_mapping(fn, nid, SEND);
-    lde_mp2mp_start_mbb_hold_timer(fn);
+    struct in_addr nid_add;
+    struct in_addr nid_del;
+    if (mbb_switch == true) {
+        nid_add.s_addr = inet_addr("4.4.4.4");
+        nid_del.s_addr = inet_addr("3.3.3.3");
+        mbb_switch = false;
+    }
+    else {
+        nid_add.s_addr = inet_addr("3.3.3.3");
+        nid_del.s_addr = inet_addr("4.4.4.4");
+        mbb_switch = true;
+    }
+
+    struct lde_map *pme;
+    LIST_FOREACH(pme, &fn->downstream, entry) {
+        if (pme->map.type == MAP_TYPE_MP2MP_DOWN || pme->map.type == MAP_TYPE_MP2MP_UP) {
+            if (pme->nexthop->id.s_addr == nid_del.s_addr) lde_map_del(pme->nexthop, pme, 0);
+        }
+    }
+    LIST_FOREACH(pme, &fn->upstream, entry) {
+        if (pme->map.type == MAP_TYPE_MP2MP_DOWN || pme->map.type == MAP_TYPE_MP2MP_UP) {
+            if (pme->nexthop->id.s_addr == nid_del.s_addr) lde_map_del(pme->nexthop, pme, 1);
+        }
+    }
+
+    lde_mp2mp_create_withdraw(fn, nid_del);
+    sleep(2);
+    lde_mp2mp_create_mbb_d_mapping(fn, nid_add, SEND);
+//    lde_mp2mp_start_mbb_hold_timer(fn);
 
     return 0;
 }
@@ -1563,9 +1593,8 @@ int lde_mp2mp_make_switch_mid_node(struct fec_node *fn) {
 
 int lde_mp2mp_make_root_node(struct fec_node *fn) {
     int ret = 0;
- 
-    struct in_addr tmp;
-    tmp.s_addr = inet_addr("3.3.3.3");
+
+    struct lde_map *me = NULL;
 /*
     ret = lde_mp2mp_create_d_mapping(fn, tmp, RECV);
     if (ret != 0) {
@@ -1573,12 +1602,17 @@ int lde_mp2mp_make_root_node(struct fec_node *fn) {
         return -1;
     }
 */
-    ret = lde_mp2mp_create_u_mapping(fn, tmp, SEND);
-    if (ret != 0) {
-        log_notice("create u mapping error, erro line: %d", __LINE__);
-        return -1;
+
+    LIST_FOREACH(me, &fn->downstream, entry) {
+        if (me->map.type == MAP_TYPE_MP2MP_DOWN) {
+            ret = lde_mp2mp_create_u_mapping(fn, me->nexthop->id, SEND);
+            if (ret != 0) {
+                log_notice("create u mapping error, erro line: %d", __LINE__);
+                return -1;
+            }
+        }
     }
-  
+ 
     return 0;
 }
 
@@ -1706,6 +1740,30 @@ int lde_mp2mp_process_u_mapping(struct fec_node *fn) {
 
     return 0;
 }
+
+int lde_mp2mp_create_withdraw(struct fec_node *fn, struct in_addr nid) {
+    struct lde_nbr *ln = NULL;
+
+    printf("%s\n", __func__);
+    struct lde_nbr *tmp = NULL;
+    RB_FOREACH(tmp, nbr_tree, &lde_nbrs) {
+        printf("%s, tmp->peerid: %u, tmp->id: %s, nid: %s\n",
+                __func__, tmp->peerid, inet_ntoa(tmp->id), inet_ntoa(nid));
+        if (tmp->id.s_addr == nid.s_addr) {
+            ln = tmp;
+            break;
+        }
+    }
+
+    if (ln == NULL) {
+        log_notice("neighbor %s is not exist, error line: %d", inet_ntoa(nid), __LINE__);
+        return -1;
+    }
+
+    lde_send_labelwithdraw(ln, fn, 10000, NULL);
+    return 0;
+}
+
 #else
 int lde_mp2mp_start(void) {
     printf("%s\n", __func__);
