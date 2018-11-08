@@ -1,8 +1,0 @@
-message DocFieldMeta {
-  required string name = 1;
-  required string parser = 2;
-}
-
-message DocMeta {
-  repeated DocFieldMeta field_meta = 1;
-}
