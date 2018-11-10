@@ -911,15 +911,18 @@ lde_send_labelmapping(struct lde_nbr *ln, struct fec_node *fn, int single)
 
 void
 lde_send_labelwithdraw(struct lde_nbr *ln, struct fec_node *fn, uint32_t label,
-    struct status_tlv *st)
+    struct status_tlv *st, uint8_t map_type)
 {
 	struct lde_wdraw	*lw;
 	struct map		 map;
 	struct fec		*f;
 	struct l2vpn_pw		*pw;
 
+    printf("%s, ln->id: %s, ", __func__, inet_ntoa(ln->id));
+    printf("fn->fec.u.ipv4.prefix: %s, label: %u\n", inet_ntoa(fn->fec.u.ipv4.prefix), label);
 	if (fn) {
 		lde_fec2map(&fn->fec, &map);
+        if(map_type == MAP_TYPE_MP2MP_UP || map_type == MAP_TYPE_MP2MP_DOWN) map.type = map_type;
 		switch (fn->fec.type) {
 		case FEC_TYPE_IPV4:
 			if (!ln->v4_enabled)
@@ -940,7 +943,7 @@ lde_send_labelwithdraw(struct lde_nbr *ln, struct fec_node *fn, uint32_t label,
 			break;
 		}
 		map.label = fn->local_label;
-        if (label == 10000) map.label = label;
+        if (map.type == MAP_TYPE_MP2MP_UP || map.type == MAP_TYPE_MP2MP_DOWN) map.label = label;
 	} else {
 		memset(&map, 0, sizeof(map));
 		map.type = MAP_TYPE_WILDCARD;
@@ -984,17 +987,18 @@ lde_send_labelwithdraw_all(struct fec_node *fn, uint32_t label)
 	struct lde_nbr		*ln;
 
 	RB_FOREACH(ln, nbr_tree, &lde_nbrs)
-		lde_send_labelwithdraw(ln, fn, label, NULL);
+		lde_send_labelwithdraw(ln, fn, label, NULL, 0);
 }
 
 void
-lde_send_labelrelease(struct lde_nbr *ln, struct fec_node *fn, uint32_t label)
+lde_send_labelrelease(struct lde_nbr *ln, struct fec_node *fn, uint32_t label, uint8_t map_type)
 {
 	struct map		 map;
 	struct l2vpn_pw		*pw;
 
 	if (fn) {
 		lde_fec2map(&fn->fec, &map);
+        map.type = map_type;
 		switch (fn->fec.type) {
 		case FEC_TYPE_IPV4:
 			if (!ln->v4_enabled)
@@ -1286,14 +1290,14 @@ lde_change_egress_label(int af, int was_implicit)
 		/* explicit withdraw */
 		if (was_implicit)
 			lde_send_labelwithdraw(ln, NULL, MPLS_LABEL_IMPLNULL,
-			    NULL);
+			    NULL, 0);
 		else {
 			if (ln->v4_enabled)
 				lde_send_labelwithdraw(ln, NULL,
-				    MPLS_LABEL_IPV4NULL, NULL);
+				    MPLS_LABEL_IPV4NULL, NULL, 0);
 			if (ln->v6_enabled)
 				lde_send_labelwithdraw(ln, NULL,
-				    MPLS_LABEL_IPV6NULL, NULL);
+				    MPLS_LABEL_IPV6NULL, NULL, 0);
 		}
 
 		/* advertise new label of connected prefixes */
@@ -1420,11 +1424,12 @@ int lde_mp2mp_start(void) {
     printf("%s, ldeconf-rtr_id: %s\n", __func__, inet_ntoa(ldeconf->rtr_id)); 
     
     if (ldeconf->rtr_id.s_addr == LEAF) ref = lde_mp2mp_make_leaf_node(fn);
+/*
     else if (ldeconf->rtr_id.s_addr == SWITCH) ref = lde_mp2mp_make_switch_node(fn);
     else if (ldeconf->rtr_id.s_addr == SWITCH_MID1 || ldeconf->rtr_id.s_addr == SWITCH_MID2)
         ref = lde_mp2mp_make_switch_mid_node(fn);
     else if (ldeconf->rtr_id.s_addr == ROOT) ref = lde_mp2mp_make_root_node(fn);
-
+*/
     return ref;
 }
 
@@ -1480,19 +1485,36 @@ int lde_mp2mp_up_proto_change(void) {
         mbb_switch = true;
     }
 
-    struct lde_map *pme;
+/*
+    struct lde_nbr *ln = NULL;
+    printf("%s\n", __func__);
+    struct lde_nbr *tmp = NULL;
+    RB_FOREACH(tmp, nbr_tree, &lde_nbrs) {
+        printf("%s, tmp->peerid: %u, tmp->id: %s, nid: %s\n",
+                __func__, tmp->peerid, inet_ntoa(tmp->id), inet_ntoa(nid));
+        if (tmp->id.s_addr == nid_del.s_addr) {
+            ln = tmp;
+            break;
+        }
+    }
+    if (ln == NULL) {
+        log_notice("neighbor %s is not exist, error line: %d", inet_ntoa(nid), __LINE__);
+        return -1;
+    }
+
     LIST_FOREACH(pme, &fn->downstream, entry) {
         if (pme->map.type == MAP_TYPE_MP2MP_DOWN || pme->map.type == MAP_TYPE_MP2MP_UP) {
             if (pme->nexthop->id.s_addr == nid_del.s_addr) lde_map_del(pme->nexthop, pme, 0);
         }
     }
+*/
+    struct lde_map *pme;
     LIST_FOREACH(pme, &fn->upstream, entry) {
-        if (pme->map.type == MAP_TYPE_MP2MP_DOWN || pme->map.type == MAP_TYPE_MP2MP_UP) {
-            if (pme->nexthop->id.s_addr == nid_del.s_addr) lde_map_del(pme->nexthop, pme, 1);
+        if (pme->map.type == MAP_TYPE_MP2MP_DOWN && pme->nexthop->id.s_addr == nid_del.s_addr) {
+            lde_send_labelwithdraw(pme->nexthop, fn, pme->map.label, NULL, MAP_TYPE_MP2MP_DOWN);
         }
     }
 
-    lde_mp2mp_create_withdraw(fn, nid_del);
     sleep(2);
     lde_mp2mp_create_mbb_d_mapping(fn, nid_add, SEND);
 //    lde_mp2mp_start_mbb_hold_timer(fn);
@@ -1734,7 +1756,12 @@ int lde_mp2mp_process_u_mapping(struct fec_node *fn) {
     }
     LIST_FOREACH(me, &fn->downstream, entry) {
         if (me->map.type == MAP_TYPE_MP2MP_DOWN) {
-            lde_mp2mp_create_u_mapping(fn, me->nexthop->id, SEND);
+            struct lde_map *dme = NULL;
+            bool is_send_map = true;
+            LIST_FOREACH(dme, &fn->upstream, entry) {
+                if (dme->map.type == MAP_TYPE_MP2MP_UP && dme->nexthop == me->nexthop) is_send_map = false;
+            }
+            if (is_send_map == true)  lde_mp2mp_create_u_mapping(fn, me->nexthop->id, SEND);
         }
     }
 
@@ -1760,9 +1787,41 @@ int lde_mp2mp_create_withdraw(struct fec_node *fn, struct in_addr nid) {
         return -1;
     }
 
-    lde_send_labelwithdraw(ln, fn, 10000, NULL);
+//    lde_send_labelwithdraw(ln, fn, 10000, NULL);
     return 0;
 }
+
+struct lde_nbr *
+lde_mp2mp_get_nexthop(struct fec_node *fn) {
+    struct lde_nbr *ln = NULL;
+    struct fec f;
+    struct fec *fp = NULL;
+    struct fec_node *tmpf = NULL;
+
+    RB_FOREACH(ln, nbr_tree, &lde_nbrs) {
+        printf("%s, tmp->peerid: %u, tmp->id: %s\n",
+                __func__, ln->peerid, inet_ntoa(ln->id));
+        f.type = FEC_TYPE_IPV4;
+        f.u.ipv4.prefix = ln->id;
+        f.u.ipv4.prefixlen = 32;
+
+        fp = fec_find(&ft, &f);
+        tmpf = (struct fec_node *)fp;
+        struct fec_nh *fnh1 = NULL;
+        struct fec_nh *fnh2 = NULL;
+        LIST_FOREACH(fnh1, &tmpf->nexthops, entry) {
+            LIST_FOREACH(fnh2, &fn->nexthops, entry) {
+                if (fnh1->nexthop.v4.s_addr == fnh2->nexthop.v4.s_addr) {
+                    return ln;
+                }
+            }
+        }           
+    }
+
+    return NULL;
+}
+
+   
 
 #else
 int lde_mp2mp_start(void) {

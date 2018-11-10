@@ -314,7 +314,7 @@ l2vpn_pw_negotiate(struct lde_nbr *ln, struct fec_node *fn, struct map *map)
 			st.status_code = S_WRONG_CBIT;
 			st.msg_id = map->msg_id;
 			st.msg_type = htons(MSG_TYPE_LABELMAPPING);
-			lde_send_labelwithdraw(ln, fn, NO_LABEL, &st);
+			lde_send_labelwithdraw(ln, fn, NO_LABEL, &st, 0);
 
 			pw->flags &= ~F_PW_CWORD;
 			lde_send_labelmapping(ln, fn, 1);

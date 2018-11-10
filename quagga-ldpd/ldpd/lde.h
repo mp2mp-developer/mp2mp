@@ -156,10 +156,10 @@ void		 lde_map2fec(struct map *, struct in_addr, struct fec *);
 void		 lde_send_labelmapping(struct lde_nbr *, struct fec_node *,
 		    int);
 void		 lde_send_labelwithdraw(struct lde_nbr *, struct fec_node *,
-		    uint32_t, struct status_tlv *);
+		    uint32_t, struct status_tlv *, uint8_t map_type);
 void		 lde_send_labelwithdraw_all(struct fec_node *, uint32_t);
 void		 lde_send_labelrelease(struct lde_nbr *, struct fec_node *,
-		    uint32_t);
+		    uint32_t, uint8_t map_type);
 void		 lde_send_notification(uint32_t, uint32_t, uint32_t, uint16_t);
 struct lde_nbr	*lde_nbr_find_by_lsrid(struct in_addr);
 struct lde_nbr	*lde_nbr_find_by_addr(int, union ldpd_addr *);
@@ -219,6 +219,7 @@ int lde_mp2mp_create_mbb_d_mapping(struct fec_node *fn, struct in_addr nid, int 
 int lde_mp2mp_start_mbb_hold_timer(struct fec_node *fn);
 int lde_mp2mp_hold_timeout(struct thread *thread);
 int lde_mp2mp_create_withdraw(struct fec_node *fn, struct in_addr nid);
+struct lde_nbr *lde_mp2mp_get_nexthop(struct fec_node *fn);
 
 /* l2vpn.c */
 struct l2vpn	*l2vpn_new(const char *);

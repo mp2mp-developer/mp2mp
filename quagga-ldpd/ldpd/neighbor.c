@@ -284,7 +284,6 @@ void
 nbr_del(struct nbr *nbr)
 {
 	log_debug("%s: lsr-id %s", __func__, inet_ntoa(nbr->id));
-    printf("%s, NBR_EVT_CLOSE_SESSION\n", __func__);
 	nbr_fsm(nbr, NBR_EVT_CLOSE_SESSION);
 #ifdef __OpenBSD__
 	pfkey_remove(nbr);
@@ -402,7 +401,6 @@ nbr_start_ktimer(struct nbr *nbr)
 
 	/* send three keepalives per period */
 	secs = nbr->keepalive / KEEPALIVE_PER_PERIOD;
-    log_notice("%s, nbr->keepalive: %u, secs: %d\n", __func__, nbr->keepalive, secs);
 	THREAD_TIMER_OFF(nbr->keepalive_timer);
 	nbr->keepalive_timer = thread_add_timer(master, nbr_ktimer, nbr, secs);
 }
@@ -450,7 +448,6 @@ nbr_itimeout(struct thread *thread)
 {
 	struct nbr	*nbr = THREAD_ARG(thread);
 
-    printf("%s, NBR_EVT_CLOSE_SESSION\n", __func__);
 	log_debug("%s: lsr-id %s", __func__, inet_ntoa(nbr->id));
 
 	nbr_fsm(nbr, NBR_EVT_CLOSE_SESSION);
