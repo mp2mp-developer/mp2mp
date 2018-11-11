@@ -244,6 +244,7 @@ mp2mp_dscb_dump(pid_t pid)
 		
         rtctl.local_label = fn->local_label; //不予显示
 		LIST_FOREACH(me, &fn->downstream, entry) {
+            printf("%s, me->map.type: %d, me->map.label: %u\n", __func__, me->map.type, me->map.label);
             if (me->map.type != MAP_TYPE_MP2MP_UP && me->map.type != MAP_TYPE_MP2MP_DOWN) continue;
 			rtctl.in_use = lde_nbr_is_nexthop(fn, me->nexthop);
 			rtctl.nexthop = me->nexthop->id;
@@ -625,6 +626,9 @@ lde_check_mapping(struct map *map, struct lde_nbr *ln)
             me = lde_map_add(ln, fn, 0);
         me->map = *map;
         printf("%s, recive and save mapping\n", __func__);
+		LIST_FOREACH(me, &fn->downstream, entry) {
+            printf("%s, me->map.type: %d, me->map.label: %u\n", __func__, me->map.type, me->map.label);
+        }
 
         if (map->type == MAP_TYPE_MP2MP_DOWN) {
             if (ldeconf->rtr_id.s_addr == ROOT) lde_mp2mp_process_u_mapping(fn);
@@ -780,6 +784,7 @@ lde_check_release(struct map *map, struct lde_nbr *ln)
 	struct lde_wdraw	*lw;
 	struct lde_map		*me;
 
+    printf("%s, map->type: %u, map->label: %u, ln->id: %s\n", __func__, map->type, map->label, inet_ntoa(ln->id));
 	/* TODO group wildcard */
 	if (map->type == MAP_TYPE_PWID && !(map->flags & F_MAP_PW_ID))
 		return;
@@ -850,6 +855,7 @@ lde_check_withdraw(struct map *map, struct lde_nbr *ln)
 	struct lde_map		*me;
 	struct l2vpn_pw		*pw;
 
+    printf("%s, map->type: %u, map->label: %u, ln->id: %s\n", __func__, map->type, map->label, inet_ntoa(ln->id));
 	/* TODO group wildcard */
 	if (map->type == MAP_TYPE_PWID && !(map->flags & F_MAP_PW_ID))
 		return;
@@ -883,7 +889,7 @@ lde_check_withdraw(struct map *map, struct lde_nbr *ln)
         }
         if (is_del_map == true) {
             LIST_FOREACH(pme, &fn->downstream, entry) {
-                if (pme->map.type == map->type && pme->map.label == map->label) {
+                if (pme->map.type == map->type && pme->map.label == map->label && pme->nexthop == ln) {
                     lde_map_del(ln, pme, 0);
                 }
             }

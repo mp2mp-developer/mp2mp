@@ -1023,7 +1023,7 @@ lde_send_labelrelease(struct lde_nbr *ln, struct fec_node *fn, uint32_t label, u
 		map.type = MAP_TYPE_WILDCARD;
 	}
 	map.label = label;
-
+    printf("%s, ln->id: %s, map.type: %u, map.label: %u\n", __func__, inet_ntoa(ln->id), map.type, map.label);
 	lde_imsg_compose_ldpe(IMSG_RELEASE_ADD, ln->peerid, 0,
 	    &map, sizeof(map));
 	lde_imsg_compose_ldpe(IMSG_RELEASE_ADD_END, ln->peerid, 0, NULL, 0);
@@ -1515,7 +1515,7 @@ int lde_mp2mp_up_proto_change(void) {
         }
     }
 
-    sleep(2);
+//    sleep(2);
     lde_mp2mp_create_mbb_d_mapping(fn, nid_add, SEND);
 //    lde_mp2mp_start_mbb_hold_timer(fn);
 
@@ -1756,9 +1756,12 @@ int lde_mp2mp_process_u_mapping(struct fec_node *fn) {
     }
     LIST_FOREACH(me, &fn->downstream, entry) {
         if (me->map.type == MAP_TYPE_MP2MP_DOWN) {
+            printf("%s, me->map.type: %u, me->map.label: %u\n", __func__, me->map.type, me->map.label);
             struct lde_map *dme = NULL;
             bool is_send_map = true;
             LIST_FOREACH(dme, &fn->upstream, entry) {
+                printf("%s, dme->map.type: %u, dme->map.label: %u, dme->nexthop->id: %s\n",
+                        __func__, dme->map.type, dme->map.label, inet_ntoa(dme->nexthop->id));
                 if (dme->map.type == MAP_TYPE_MP2MP_UP && dme->nexthop == me->nexthop) is_send_map = false;
             }
             if (is_send_map == true)  lde_mp2mp_create_u_mapping(fn, me->nexthop->id, SEND);

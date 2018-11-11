@@ -399,8 +399,8 @@ recv_labelmessage(struct nbr *nbr, char *buf, uint16_t len, uint16_t type)
 			me->map.requestid = reqid;
 
     
-        printf("%s, map->fec.prefix.prefix.v4 :%s, map->type: %u, map->msg_id: %u, map->label: %u\n",
-                __func__, inet_ntoa(me->map.fec.prefix.prefix.v4), me->map.type, me->map.msg_id, me->map.label);
+        printf("%s, map->fec.prefix.prefix.v4 :%s, map->type: %u, map->msg_id: %u, map->label: %u, type: %u\n",
+                __func__, inet_ntoa(me->map.fec.prefix.prefix.v4), me->map.type, me->map.msg_id, me->map.label, type);
 		debug_msg_recv("%s: lsr-id %s fec %s label %s", msg_name(type),
 		    inet_ntoa(nbr->id), log_map(&me->map),
 		    log_label(me->map.label));
