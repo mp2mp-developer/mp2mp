@@ -318,7 +318,13 @@
           <option name="nexthop" help="set mp2mp nexthop" function="ldp_vty_mp2mp_route_change">
             <select options="addr" arg="nexthopip" function="ldp_vty_mp2mp_route_change"/>
           </option>
-        </option>
+          <option name="holdtime" help="set mp2mp mbb hold time" function="ldp_vty_mp2mp_hold_time">
+            <select options="addr" arg="holdtime" function="ldp_vty_mp2mp_hold_time"/>
+          </option>
+          <option name="switchtime" help="set mp2mp mbb switch delay time" function="ldp_vty_mp2mp_switch_time">
+            <select options="addr" arg="switchtime" function="ldp_vty_mp2mp_switch_time"/>
+          </option>
+       </option>
       </option>
     </option>
     <option name="clear" help="Reset functions">

@@ -77,10 +77,15 @@ send_labelmessage(struct nbr *nbr, uint16_t type, struct mapping_head *mh)
 			msg_size += FEC_ELM_WCARD_LEN;
 			break;
 		case MAP_TYPE_PREFIX:
-        case MAP_TYPE_MP2MP_UP:
-        case MAP_TYPE_MP2MP_DOWN:
 			msg_size += FEC_ELM_PREFIX_MIN_LEN +
 			    PREFIX_SIZE(me->map.fec.prefix.prefixlen);
+			break;
+        case MAP_TYPE_MP2MP_DOWN:
+		case MAP_TYPE_MP2MP_UP:
+			msg_size += FEC_ELM_MP2MP_MIN_LEN +
+			    sizeof(me->map.fec.prefix.prefixlen);
+            if (me->map.st.status_code != 0) msg_size += MP_STATUS_TLV_LEN + 4; //status header len == 4 
+            printf("%s, status_code: %d, msg_id: %d, msg_type: %d\n", __func__, me->map.st.status_code, me->map.st.msg_id, me->map.st.msg_type);
 			break;
 		case MAP_TYPE_PWID:
 			msg_size += FEC_PWID_ELM_MIN_LEN;
@@ -120,6 +125,8 @@ send_labelmessage(struct nbr *nbr, uint16_t type, struct mapping_head *mh)
 		if (me->map.flags & F_MAP_STATUS)
 			err |= gen_status_tlv(buf, me->map.st.status_code,
 			    me->map.st.msg_id, me->map.st.msg_type);
+        if (me->map.type == MAP_TYPE_MP2MP_DOWN && me->map.st.status_code != 0)
+            err |= gen_mp_status_tlv(buf, me->map.st.status_code);
 		if (err) {
 			ibuf_free(buf);
 			return;
@@ -146,6 +153,7 @@ recv_labelmessage(struct nbr *nbr, char *buf, uint16_t len, uint16_t type)
 	struct tlv		 ft;
 	uint32_t		 label = NO_LABEL, reqid = 0;
 	uint32_t		 pw_status = 0;
+    uint32_t         mp_status = 0;
 	uint8_t			 flags = 0;
 	int			 feclen, lbllen, tlen;
 	struct mapping_entry	*me;
@@ -341,6 +349,24 @@ recv_labelmessage(struct nbr *nbr, char *buf, uint16_t len, uint16_t type)
 				break;
 			}
 			break;
+        case TLV_TYPE_MP_STATUS:
+			switch (type) {
+			case MSG_TYPE_LABELMAPPING:
+				if (tlv_len != MP_STATUS_TLV_LEN) {
+					printf("%s, %d\n", __func__, __LINE__);session_shutdown(nbr, S_BAD_TLV_LEN,
+					    msg.id, msg.type);
+					goto err;
+				}
+
+				memcpy(&statusbuf, buf, sizeof(statusbuf));
+				mp_status = ntohl(statusbuf);
+                printf("%s, mp_status: %d\n", __func__, mp_status);
+				break;
+			default:
+				/* ignore */
+				break;
+			}
+			break;
 		default:
 			if (!(ntohs(tlv.type) & UNKNOWN_FLAG))
 				send_notification_nbr(nbr, S_UNKNOWN_TLV,
@@ -359,6 +385,8 @@ recv_labelmessage(struct nbr *nbr, char *buf, uint16_t len, uint16_t type)
 		me->map.flags |= flags;
 		switch (me->map.type) {
 		case MAP_TYPE_PREFIX:
+        case MAP_TYPE_MP2MP_DOWN:
+		case MAP_TYPE_MP2MP_UP:
 			switch (me->map.fec.prefix.af) {
 			case AF_IPV4:
 				if (label == MPLS_LABEL_IPV6NULL) {
@@ -368,6 +396,10 @@ recv_labelmessage(struct nbr *nbr, char *buf, uint16_t len, uint16_t type)
 				}
 				if (!nbr->v4_enabled)
 					goto next;
+                if (me->map.type == MAP_TYPE_MP2MP_DOWN && mp_status != 0) {
+                    me->map.st.status_code = mp_status;
+                    printf("%s, me->map.st.status_code: %d, mp_status: %d\n", __func__, me->map.st.status_code, mp_status);
+                }
 				break;
 			case AF_IPV6:
 				if (label == MPLS_LABEL_IPV4NULL) {
@@ -526,11 +558,23 @@ gen_pw_status_tlv(struct ibuf *buf, uint32_t status)
 }
 
 int
+gen_mp_status_tlv(struct ibuf *buf, uint32_t status)
+{
+	struct mp_status_tlv	st;
+
+	st.type = htons(TLV_TYPE_MP_STATUS);
+	st.length = htons(MP_STATUS_TLV_LEN);
+	st.value = htonl(status);
+
+	return (ibuf_add(buf, &st, sizeof(st)));
+}
+
+int
 gen_fec_tlv(struct ibuf *buf, struct map *map)
 {
 	struct tlv	ft;
-	uint16_t	family, len, pw_type, ifmtu;
-	uint8_t		pw_len = 0;
+	uint16_t	family, len, pw_type, ifmtu, ov_len;
+	uint8_t		ov, pw_len = 0;
 	uint32_t	group_id, pwid;
 	int		err = 0;
 
@@ -543,8 +587,6 @@ gen_fec_tlv(struct ibuf *buf, struct map *map)
 		err |= ibuf_add(buf, &map->type, sizeof(map->type));
 		break;
 	case MAP_TYPE_PREFIX:
-    case MAP_TYPE_MP2MP_UP:
-    case MAP_TYPE_MP2MP_DOWN:
 		len = PREFIX_SIZE(map->fec.prefix.prefixlen);
 		ft.length = htons(sizeof(map->type) + sizeof(family) +
 		    sizeof(map->fec.prefix.prefixlen) + len);
@@ -557,6 +599,28 @@ gen_fec_tlv(struct ibuf *buf, struct map *map)
 		    sizeof(map->fec.prefix.prefixlen));
 		if (len)
 			err |= ibuf_add(buf, &map->fec.prefix.prefix, len);
+		break;
+	case MAP_TYPE_MP2MP_DOWN:
+	case MAP_TYPE_MP2MP_UP:
+		ov = map->fec.prefix.prefixlen;
+		ov_len = htons(sizeof(map->fec.prefix.prefixlen));
+		map->fec.prefix.prefixlen = 32;
+
+		len = PREFIX_SIZE(map->fec.prefix.prefixlen);
+		ft.length = htons(sizeof(map->type) + sizeof(family) +
+		    sizeof(map->fec.prefix.prefixlen) + len + 2 + 1); // 2 ovlen, 1为一个字节ov
+		err |= ibuf_add(buf, &ft, sizeof(ft));
+
+		err |= ibuf_add(buf, &map->type, sizeof(map->type));
+		family = htons(map->fec.prefix.af);
+		err |= ibuf_add(buf, &family, sizeof(family));
+		err |= ibuf_add(buf, &map->fec.prefix.prefixlen,
+		    sizeof(map->fec.prefix.prefixlen));
+		if (len)
+			err |= ibuf_add(buf, &map->fec.prefix.prefix, len);
+
+		err |= ibuf_add(buf, &ov_len, sizeof(ov_len));
+		err |= ibuf_add(buf, &ov, sizeof(ov));
 		break;
 	case MAP_TYPE_PWID:
 		if (map->flags & F_MAP_PW_ID)
@@ -604,10 +668,10 @@ int
 tlv_decode_fec_elm(struct nbr *nbr, struct ldp_msg *msg, char *buf,
     uint16_t len, struct map *map)
 {
-	uint16_t	off = 0;
-	uint8_t		pw_len;
+	uint16_t	ovlen, off = 0;
+	uint8_t		ov, pw_len;
 
-	map->type = *buf;
+    map->type = *buf;
 	off += sizeof(uint8_t);
 
     switch (map->type) {
@@ -621,8 +685,6 @@ tlv_decode_fec_elm(struct nbr *nbr, struct ldp_msg *msg, char *buf,
 		}
 		break;
 	case MAP_TYPE_PREFIX:
-    case MAP_TYPE_MP2MP_UP:
-    case MAP_TYPE_MP2MP_DOWN:
 		if (len < FEC_ELM_PREFIX_MIN_LEN) {
 			printf("%s, %d\n", __func__, __LINE__);session_shutdown(nbr, S_BAD_TLV_LEN, msg->id,
 			    msg->type);
@@ -659,7 +721,58 @@ tlv_decode_fec_elm(struct nbr *nbr, struct ldp_msg *msg, char *buf,
         printf("%s, map->fec.prefix.prefix.v4 :%s, map->type: %u, map->msg_id: %u\n",
                 __func__, inet_ntoa(map->fec.prefix.prefix.v4), map->type, map->msg_id);
 		return (off + PREFIX_SIZE(map->fec.prefix.prefixlen));
-	case MAP_TYPE_PWID:
+	case MAP_TYPE_MP2MP_DOWN:
+	case MAP_TYPE_MP2MP_UP:
+		if (len < FEC_ELM_MP2MP_MIN_LEN) {
+			session_shutdown(nbr, S_BAD_TLV_LEN, msg->id,
+			    msg->type);
+			return (-1);
+		}
+
+		/* Address Family */
+		memcpy(&map->fec.prefix.af, buf + off,
+		    sizeof(map->fec.prefix.af));
+		map->fec.prefix.af = ntohs(map->fec.prefix.af);
+		off += sizeof(map->fec.prefix.af);
+		if (map->fec.prefix.af != AF_IPV4 &&
+		    map->fec.prefix.af != AF_IPV6) {
+			send_notification_nbr(nbr, S_UNSUP_ADDR, msg->id,
+			    msg->type);
+			return (-1);
+		}
+
+		/* Prefix Length */
+		map->fec.prefix.prefixlen = buf[off];
+		off += sizeof(uint8_t);
+		if (len < off + PREFIX_SIZE(map->fec.prefix.prefixlen)) {
+			session_shutdown(nbr, S_BAD_TLV_LEN, msg->id,
+			    msg->type);
+			return (-1);
+		}
+
+		/* Prefix */
+		memset(&map->fec.prefix.prefix, 0,
+		    sizeof(map->fec.prefix.prefix));
+		memcpy(&map->fec.prefix.prefix, buf + off,
+		    PREFIX_SIZE(map->fec.prefix.prefixlen));
+		off += PREFIX_SIZE(map->fec.prefix.prefixlen);
+
+		/* ovlen */
+		memcpy(&ovlen, buf + off, sizeof(ovlen));
+		ovlen = ntohs(ovlen);
+		off += sizeof(ovlen);
+		if (len < off + ovlen) {
+			session_shutdown(nbr, S_BAD_TLV_LEN, msg->id,
+			    msg->type);
+			return (-1);
+		}
+
+		/* ov */
+		ov = buf[off];
+		map->fec.prefix.prefixlen = ov;
+
+		return (off + ovlen);
+    case MAP_TYPE_PWID:
 		if (len < FEC_PWID_ELM_MIN_LEN) {
 			printf("%s, %d\n", __func__, __LINE__);session_shutdown(nbr, S_BAD_TLV_LEN, msg->id,
 			    msg->type);

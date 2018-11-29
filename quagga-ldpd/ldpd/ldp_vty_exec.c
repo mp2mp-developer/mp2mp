@@ -46,7 +46,9 @@ enum show_command {
     SHOW_MP2MP_INSEG,
     SHOW_MP2MP_OUTSEG,
     MP2MP_SET_ROOT,
-    MP2MP_ROUTE_CHANGE
+    MP2MP_ROUTE_CHANGE,
+    MP2MP_SET_HOLD_TIME,
+    MP2MP_SET_SWITCH_TIME
 };
 
 struct show_filter {
@@ -81,6 +83,8 @@ static int      show_mp2mp_insegment_msg(struct vty *vty, struct imsg *imsg);
 static int      show_mp2mp_outsegment_msg(struct vty *vty, struct imsg *imsg);
 static int      show_mp2mp_set_root_status(struct vty *vty, struct imsg *imsg);
 static int      show_mp2mp_route_change_status(struct vty *vty, struct imsg *imsg);
+static int      show_mp2mp_set_switchtime(struct vty *vty, struct imsg *imsg);
+static int      show_mp2mp_set_holdtime(struct vty *vty, struct imsg *imsg);
 
 static int
 show_interface_msg(struct vty *vty, struct imsg *imsg,
@@ -515,6 +519,14 @@ ldp_vty_dispatch(struct vty *vty, struct imsgbuf *ibuf, enum show_command cmd,
                 printf("%s, MP2MP_ROUTE_CHANGE\n", __func__);
                 done = show_mp2mp_route_change_status(vty, &imsg);
                 break;
+            case MP2MP_SET_HOLD_TIME:
+                printf("%s, MP2MP_SET_HOLD_TIME\n", __func__);
+                done = show_mp2mp_set_holdtime(vty, &imsg);
+                break;
+            case MP2MP_SET_SWITCH_TIME:
+                printf("%s, MP2MP_SET_SWITCH_TIME\n", __func__);
+                done = show_mp2mp_set_switchtime(vty, &imsg);
+                break;
 		default:
 				break;
 			}
@@ -734,11 +746,14 @@ ldp_vty_mp2mp_set_root(struct vty *vty, struct vty_arg *args[])
     printf("%s\n", __func__);
  	struct imsgbuf		 ibuf;
 	struct show_filter	 filter;
+    const char *addr_str = NULL;
 
 	if (ldp_vty_connect(&ibuf) < 0)
 		return (CMD_WARNING);
 
-	imsg_compose(&ibuf, IMSG_CTL_MP2MP_SET_ROOT, 0, 0, -1, NULL, 0);
+	addr_str = vty_get_arg_value(args, "rootip");
+	if (addr_str != NULL) imsg_compose(&ibuf, IMSG_CTL_MP2MP_SET_ROOT, 0, 0, -1, addr_str, strlen(addr_str));
+    else imsg_compose(&ibuf, IMSG_CTL_MP2MP_SET_ROOT, 0, 0, -1, NULL, 0);
 
 	/* not used */
 	memset(&filter, 0, sizeof(filter));
@@ -747,16 +762,61 @@ ldp_vty_mp2mp_set_root(struct vty *vty, struct vty_arg *args[])
 }
 
 int
+ldp_vty_mp2mp_hold_time(struct vty *vty, struct vty_arg *args[]) {
+    printf("%s\n", __func__);
+ 	struct imsgbuf		 ibuf;
+	struct show_filter	 filter;
+    const char *hold_time = NULL;
+
+	if (ldp_vty_connect(&ibuf) < 0)
+		return (CMD_WARNING);
+
+	hold_time = vty_get_arg_value(args, "holdtime");
+	if (hold_time != NULL) imsg_compose(&ibuf, IMSG_CTL_MP2MP_SET_HOLD_TIME, 0, 0, -1, hold_time, strlen(hold_time));
+    else imsg_compose(&ibuf, IMSG_CTL_MP2MP_SET_HOLD_TIME, 0, 0, -1, NULL, 0);
+
+
+	/* not used */
+	memset(&filter, 0, sizeof(filter));
+
+	return (ldp_vty_dispatch(vty, &ibuf, MP2MP_SET_HOLD_TIME, &filter));
+
+}
+
+int
+ldp_vty_mp2mp_switch_time(struct vty *vty, struct vty_arg *args[]) {
+    printf("%s\n", __func__);
+ 	struct imsgbuf		 ibuf;
+	struct show_filter	 filter;
+    const char *switch_time = NULL;
+
+	if (ldp_vty_connect(&ibuf) < 0)
+		return (CMD_WARNING);
+
+	switch_time = vty_get_arg_value(args, "switchtime");
+	if (switch_time != NULL) imsg_compose(&ibuf, IMSG_CTL_MP2MP_SET_SWITCH_TIME, 0, 0, -1, switch_time, strlen(switch_time));
+    else imsg_compose(&ibuf, IMSG_CTL_MP2MP_SET_SWITCH_TIME, 0, 0, -1, NULL, 0);
+
+	/* not used */
+	memset(&filter, 0, sizeof(filter));
+
+	return (ldp_vty_dispatch(vty, &ibuf, MP2MP_SET_SWITCH_TIME, &filter));
+
+}
+
+int
 ldp_vty_mp2mp_route_change(struct vty *vty, struct vty_arg *args[])
 {
     printf("%s\n", __func__);
  	struct imsgbuf		 ibuf;
 	struct show_filter	 filter;
+    const char *nexthop = NULL;
 
 	if (ldp_vty_connect(&ibuf) < 0)
 		return (CMD_WARNING);
-
-	imsg_compose(&ibuf, IMSG_CTL_MP2MP_ROUTE_CHANGE, 0, 0, -1, NULL, 0);
+    nexthop = vty_get_arg_value(args, "nexthop");
+	if (nexthop != NULL) imsg_compose(&ibuf, IMSG_CTL_MP2MP_ROUTE_CHANGE, 0, 0, -1, nexthop, strlen(nexthop));
+    else imsg_compose(&ibuf, IMSG_CTL_MP2MP_ROUTE_CHANGE, 0, 0, -1, NULL, 0);
 
 	/* not used */
 	memset(&filter, 0, sizeof(filter));
@@ -877,11 +937,11 @@ show_mp2mp_uscb_msg(struct vty *vty, struct imsg *imsg)
         printf("%s, rt->mp2mp_flags: %u\n", __func__, rt->mp2mp_flags);
         if ((rt->mp2mp_flags & U_MAPPING_IN) == U_MAPPING_IN) strcpy(mt, "U-MAPPING");
         else if ((rt->mp2mp_flags & D_MAPPING_IN) == D_MAPPING_IN) strcpy(mt, "D-MAPPING");
-        if ((rt->mp2mp_flags & NONE) == NONE) strcpy(mbb, "NONE");
-        else if ((rt->mp2mp_flags & SEND_MAPPING) == SEND_MAPPING) strcpy(mbb, "SEND_MAPPING");
+        if ((rt->mp2mp_flags & SEND_MAPPING) == SEND_MAPPING) strcpy(mbb, "SEND_MAPPING");
         else if ((rt->mp2mp_flags & SEND_MBB_MAPPING) == SEND_MBB_MAPPING) strcpy(mbb, "SEND_MBB_MAPPING");
         else if ((rt->mp2mp_flags & RECV_NOTIFI) == RECV_NOTIFI) strcpy(mbb, "RECV_NOTIFICATION");
         else if ((rt->mp2mp_flags & SWITCH_DELAY) == SWITCH_DELAY) strcpy(mbb, "SWITCH_DELAY");
+        else strcpy(mbb, "NONE");
 		if (rt->remote_label != NO_LABEL)
 			vty_out(vty, "%12s%-20s%-20s%-20s    %-20s%s", "", inet_ntoa(rt->nexthop),
 			    log_label(rt->remote_label), mt, mbb, VTY_NEWLINE);
@@ -921,21 +981,24 @@ show_mp2mp_dscb_msg(struct vty *vty, struct imsg *imsg)
 			if (rt->remote_label != NO_LABEL) {
 				vty_out(vty, "%-8sbindings:%s", "",
 				    VTY_NEWLINE);
-				vty_out(vty, "%-12sPeer                Label               Mapping-Type%s",
+				vty_out(vty, "%-12sPeer                Label               Mapping-Type         Mbb-Status%s",
 				    "", VTY_NEWLINE);
 				vty_out(vty, "%-12s-----------------   "
-				    "---------           -------------%s", "", VTY_NEWLINE);
+				    "---------           -------------          ------------%s", "", VTY_NEWLINE);
 			} else
 				vty_out(vty, "%-8sNo remote bindings%s", "",
 				    VTY_NEWLINE);
 		}
         char mt[20] = "";
+        char mbb[20] = "";
         printf("%s, rt->mp2mp_flags: %u\n", __func__, rt->mp2mp_flags);
         if ((rt->mp2mp_flags & U_MAPPING_IN) == U_MAPPING_IN) strcpy(mt, "U-MAPPING");
         else if ((rt->mp2mp_flags & D_MAPPING_IN) == D_MAPPING_IN) strcpy(mt, "D-MAPPING");
+        if (rt->mp_status_code == MBB_STATUS_REQUEST) strcpy(mbb, "MBB Mapping");
+        else strcpy(mbb, "Mapping");
 		if (rt->remote_label != NO_LABEL)
-			vty_out(vty, "%12s%-20s%-20s%-20s%s", "", inet_ntoa(rt->nexthop),
-			    log_label(rt->remote_label), mt, VTY_NEWLINE);
+			vty_out(vty, "%12s%-20s%-20s%-20s%-20s%s", "", inet_ntoa(rt->nexthop),
+			    log_label(rt->remote_label), mt, mbb, VTY_NEWLINE);
 		break;
 	case IMSG_CTL_END:
 		vty_out(vty, "%s", VTY_NEWLINE);
@@ -972,12 +1035,86 @@ static int
 show_mp2mp_set_root_status(struct vty *vty, struct imsg *imsg)
 {
     printf("%s\n", __func__);
-    return (1);
+    char result[50];
+
+    switch (imsg->hdr.type) {
+	case IMSG_CTL_MP2MP_SET_ROOT:
+        if (*((int*)(imsg->data)) == 0) strcpy(result, "set root succeed");
+        else strcpy(result, "set root failed");
+        vty_out(vty, "      %s", result);
+        break;
+    case IMSG_CTL_END:
+		vty_out(vty, "%s", VTY_NEWLINE);
+		return (1);
+	default:
+		break;
+    }
+
+    return (0);
 }
 
 static int
 show_mp2mp_route_change_status(struct vty *vty, struct imsg *imsg)
 {
     printf("%s\n", __func__);
-    return (1);
+    char result[50];
+
+    switch (imsg->hdr.type) {
+	case IMSG_CTL_MP2MP_ROUTE_CHANGE:
+        if (*((int*)(imsg->data)) == 0) strcpy(result, "route change succeed");
+        else strcpy(result, "route change failed");
+        vty_out(vty, "      %s", result);
+        break;
+    case IMSG_CTL_END:
+		vty_out(vty, "%s", VTY_NEWLINE);
+		return (1);
+	default:
+		break;
+    }
+    
+    return (0);
+}
+
+
+static int
+show_mp2mp_set_holdtime(struct vty *vty, struct imsg *imsg)
+{
+    printf("%s\n", __func__);
+    char result[50];
+
+    switch (imsg->hdr.type) {
+	case IMSG_CTL_MP2MP_SET_HOLD_TIME:
+        if (*((int*)(imsg->data)) == 0) strcpy(result, "set hold time succeed");
+        else strcpy(result, "set hold time failed");
+        vty_out(vty, "      %s", result);
+        break;
+    case IMSG_CTL_END:
+		vty_out(vty, "%s", VTY_NEWLINE);
+		return (1);
+	default:
+		break;
+	}
+   return (0);
+}
+
+static int
+show_mp2mp_set_switchtime(struct vty *vty, struct imsg *imsg)
+{
+    printf("%s\n", __func__);
+    char result[50];
+
+    switch (imsg->hdr.type) {
+	case IMSG_CTL_MP2MP_SET_SWITCH_TIME:
+        if (*((int*)(imsg->data)) == 0) strcpy(result, "set switch delay time succeed");
+        else strcpy(result, "set switch delay time failed");
+        vty_out(vty, "      %s", result);
+        break;
+    case IMSG_CTL_END:
+		vty_out(vty, "%s", VTY_NEWLINE);
+		return (1);
+	default:
+		break;
+	}
+
+    return (0);
 }

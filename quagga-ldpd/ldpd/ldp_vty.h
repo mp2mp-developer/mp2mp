@@ -82,6 +82,8 @@ int  ldp_vty_show_mp2mp_insegment(struct vty *, struct vty_arg *[]);
 int  ldp_vty_show_mp2mp_outsegment(struct vty *, struct vty_arg *[]);
 int  ldp_vty_mp2mp_set_root(struct vty *, struct vty_arg *[]);
 int  ldp_vty_mp2mp_route_change(struct vty *, struct vty_arg *[]);
+int  ldp_vty_mp2mp_hold_time(struct vty *vty, struct vty_arg *args[]);
+int  ldp_vty_mp2mp_switch_time(struct vty *vty, struct vty_arg *args[]);
 
 void	 ldp_vty_init(void);
 void	 ldp_vty_if_init(void);

@@ -95,8 +95,18 @@
 #define TLV_TYPE_PW_STATUS	0x096A
 #define TLV_TYPE_PW_IF_PARAM	0x096B
 #define TLV_TYPE_PW_GROUP_ID	0x096C
+#define TLV_TYPE_MP_STATUS 0x096F
 /* RFC 7552 */
 #define TLV_TYPE_DUALSTACK	0x8701
+/* RFC 6388 */
+#define MBB_STATUS_REQUEST 0x01000101
+#define MBB_STARUS_ACK     0x01000102
+#define MP_STATUS_TLV_LEN	4
+struct mp_status_tlv {
+	uint16_t	type;
+	uint16_t	length;
+	uint32_t	value;
+};
 
 /* LDP header */
 struct ldp_hdr {
@@ -239,6 +249,7 @@ struct address_list_tlv {
 
 #define FEC_ELM_WCARD_LEN	1
 #define FEC_ELM_PREFIX_MIN_LEN	4
+#define FEC_ELM_MP2MP_MIN_LEN 10 
 #define FEC_PWID_ELM_MIN_LEN	8
 
 #define	MAP_TYPE_WILDCARD	0x01

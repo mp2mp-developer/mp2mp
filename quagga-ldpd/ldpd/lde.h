@@ -206,8 +206,8 @@ void		 lde_gc_start_timer(void);
 void		 lde_gc_stop_timer(void);
 
 /* mp2mp */
-int lde_mp2mp_start(void);
-int lde_mp2mp_up_proto_change(void);
+int lde_mp2mp_start(char *rootip);
+int lde_mp2mp_up_proto_change(char *nexthop);
 int lde_mp2mp_make_leaf_node(struct fec_node *fn);
 int lde_mp2mp_make_switch_node(struct fec_node *fn);
 int lde_mp2mp_make_switch_mid_node(struct fec_node *fn);
@@ -220,6 +220,8 @@ int lde_mp2mp_start_mbb_hold_timer(struct fec_node *fn);
 int lde_mp2mp_hold_timeout(struct thread *thread);
 int lde_mp2mp_create_withdraw(struct fec_node *fn, struct in_addr nid);
 struct lde_nbr *lde_mp2mp_get_nexthop(struct fec_node *fn);
+int lde_mp2mp_set_mbb_hold_time(char *time);
+int lde_mp2mp_set_mbb_switch_time(char *time);
 
 /* l2vpn.c */
 struct l2vpn	*l2vpn_new(const char *);

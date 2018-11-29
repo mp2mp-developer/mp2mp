@@ -153,7 +153,9 @@ enum imsg_type {
     IMSG_CTL_SHOW_MP2MP_INSEG,
     IMSG_CTL_SHOW_MP2MP_OUTSEG,
     IMSG_CTL_MP2MP_SET_ROOT,
-    IMSG_CTL_MP2MP_ROUTE_CHANGE
+    IMSG_CTL_MP2MP_ROUTE_CHANGE,
+    IMSG_CTL_MP2MP_SET_HOLD_TIME,
+    IMSG_CTL_MP2MP_SET_SWITCH_TIME
 };
 
 union ldpd_addr {
@@ -546,6 +548,7 @@ struct ctl_rt {
 	uint8_t			 in_use;
 	int			 first;
     uint8_t     mp2mp_flags;
+    uint32_t    mp_status_code;
 };
 
 struct ctl_pw {

@@ -34,8 +34,6 @@
 #include "sigevent.h"
 #include "mpls.h"
 
-#define ECHO
-
 static void		 lde_shutdown(void);
 static int		 lde_dispatch_imsg(struct thread *);
 static int		 lde_dispatch_parent(struct thread *);
@@ -208,6 +206,7 @@ lde_dispatch_imsg(struct thread *thread)
 	struct notify_msg	 nm;
 	ssize_t			 n;
 	int			 shut = 0;
+    int ret;
 
 	iev->ev_read = NULL;
 
@@ -384,19 +383,39 @@ lde_dispatch_imsg(struct thread *thread)
             break;
         case IMSG_CTL_MP2MP_SET_ROOT:
             printf("%s, IMSG_CTL_MP2MP_SET_ROOT\n", __func__);
-            lde_mp2mp_start();
+            ret = lde_mp2mp_start(imsg.data);
             //函数里要回IMSG_CTL_MP2MP_SET_ROOT类型的消息，表示回显成功
+            lde_imsg_compose_ldpe(IMSG_CTL_MP2MP_SET_ROOT, 0,
+                imsg.hdr.pid, &ret, sizeof(ret));
             lde_imsg_compose_ldpe(IMSG_CTL_END, 0,
                     imsg.hdr.pid, NULL, 0);
             break;
         case IMSG_CTL_MP2MP_ROUTE_CHANGE:
             printf("%s, IMSG_CTL_MP2MP_ROUTE_CHANGE\n", __func__);
-            lde_mp2mp_up_proto_change();
+            ret = lde_mp2mp_up_proto_change(imsg.data);
             //函数里要回IMSG_CTL_MP2MP_ROUTE_CHANGE类型的消息，表示回显成功
+            lde_imsg_compose_ldpe(IMSG_CTL_MP2MP_ROUTE_CHANGE, 0,
+                imsg.hdr.pid, &ret, sizeof(ret));
             lde_imsg_compose_ldpe(IMSG_CTL_END, 0,
                     imsg.hdr.pid, NULL, 0);
             break;
-       case IMSG_CTL_SHOW_L2VPN_PW:
+         case IMSG_CTL_MP2MP_SET_HOLD_TIME:
+            printf("%s, IMSG_CTL_MP2MP_SET_HOLD_TIME\n", __func__);
+            ret = lde_mp2mp_set_mbb_hold_time(imsg.data);
+            lde_imsg_compose_ldpe(IMSG_CTL_MP2MP_SET_HOLD_TIME, 0,
+                imsg.hdr.pid, &ret, sizeof(ret));
+            lde_imsg_compose_ldpe(IMSG_CTL_END, 0,
+                    imsg.hdr.pid, NULL, 0);
+            break;
+          case IMSG_CTL_MP2MP_SET_SWITCH_TIME:
+            printf("%s, IMSG_CTL_MP2MP_SET_SWITCH_TIME\n", __func__);
+            ret = lde_mp2mp_set_mbb_switch_time(imsg.data);
+            lde_imsg_compose_ldpe(IMSG_CTL_MP2MP_SET_SWITCH_TIME, 0,
+                imsg.hdr.pid, &ret, sizeof(ret));
+            lde_imsg_compose_ldpe(IMSG_CTL_END, 0,
+                    imsg.hdr.pid, NULL, 0);
+            break;
+    case IMSG_CTL_SHOW_L2VPN_PW:
 			l2vpn_pw_ctl(imsg.hdr.pid);
 
 			lde_imsg_compose_ldpe(IMSG_CTL_END, 0,
@@ -825,7 +844,7 @@ lde_map2fec(struct map *map, struct in_addr lsr_id, struct fec *fec)
 }
 
 /* single == 0 或者 1都代表原来的意思 */
-/* single == 2 mp2mp D-Mapping , single == 3 mp2mp U-Mapping*/
+/* single == 2 mp2mp D-Mapping , single == 3 mp2mp U-Mapping, single == 4 mp2mp MBB D-Mapping */
 void
 lde_send_labelmapping(struct lde_nbr *ln, struct fec_node *fn, int single)
 {
@@ -846,6 +865,8 @@ lde_send_labelmapping(struct lde_nbr *ln, struct fec_node *fn, int single)
 	case FEC_TYPE_IPV4:
         if (single == 2 || single == 4) map.type = MAP_TYPE_MP2MP_DOWN;
         if (single == 3) map.type = MAP_TYPE_MP2MP_UP;
+        if (single == 4) map.st.status_code = MBB_STATUS_REQUEST;
+        else map.st.status_code = 0;
 		if (!ln->v4_enabled)
 			return;
 		break;
@@ -889,10 +910,14 @@ lde_send_labelmapping(struct lde_nbr *ln, struct fec_node *fn, int single)
     if (fn->fec.type == FEC_TYPE_IPV4 && fn->data != NULL) {
         //add for mbb
         printf("%s, add SEND_MAPPING\n", __func__);
-        if (FEC_MP2MP_EXT(fn)->mbb_flag == NONE)
-            FEC_MP2MP_EXT(fn)->mbb_flag &= SEND_MAPPING;
-        if (single == 4)
-            FEC_MP2MP_EXT(fn)->mbb_flag &= SEND_MBB_MAPPING;
+        if (FEC_MP2MP_EXT(fn)->mbb_flag == NONE) {
+            FEC_MP2MP_EXT(fn)->mbb_flag |= SEND_MAPPING;
+            printf("%s, FEC_MP2MP_EXT(fn)->mbb_flag: %u, SEND_MAPPING: %u\n", __func__, FEC_MP2MP_EXT(fn)->mbb_flag, SEND_MAPPING);
+        }
+        if (single == 4) {
+            FEC_MP2MP_EXT(fn)->mbb_flag &= NONE;
+            FEC_MP2MP_EXT(fn)->mbb_flag |= SEND_MBB_MAPPING;
+        }
     }
 
 	/* SL.4: send label mapping */
@@ -1368,7 +1393,6 @@ lde_address_find(struct lde_nbr *ln, int af, union ldpd_addr *addr)
 		if (lde_addr->af == af &&
 		    ldp_addrcmp(af, &lde_addr->addr, addr) == 0)
 			return (lde_addr);
-
 	return (NULL);
 }
 
@@ -1383,16 +1407,16 @@ lde_address_list_free(struct lde_nbr *ln)
 	}
 }
 
-#ifdef ECHO
-int lde_mp2mp_start(void) {
-    printf("%s, echo\n", __func__);
+int lde_mp2mp_start(char *rootip) {
+    printf("%s, rootip: %s\n", __func__, rootip);
 
     int ref = 0;
     struct fec fec;
     struct fec_node *fn = NULL;
-   
-    //TODO:通过命令行传入
-    char root_ip[20] = "5.5.5.5";
+  
+    char root_ip[20];
+    if (rootip != NULL) strcpy(root_ip, rootip);
+    else strcpy(root_ip, "5.5.5.5");
     fec.type = FEC_TYPE_IPV4;
     fec.u.ipv4.prefix.s_addr = inet_addr(root_ip);
     fec.u.ipv4.prefixlen = 32;
@@ -1430,6 +1454,7 @@ int lde_mp2mp_start(void) {
         ref = lde_mp2mp_make_switch_mid_node(fn);
     else if (ldeconf->rtr_id.s_addr == ROOT) ref = lde_mp2mp_make_root_node(fn);
 */
+
     return ref;
 }
 
@@ -1452,7 +1477,7 @@ int lde_mp2mp_start_mbb_hold_timer(struct fec_node *fn) {
     return 0;
 }
 
-int lde_mp2mp_up_proto_change(void) {
+int lde_mp2mp_up_proto_change(char *nexthop) {
     printf("%s, echo\n", __func__);
 
     struct fec *f = NULL;
@@ -1824,16 +1849,39 @@ lde_mp2mp_get_nexthop(struct fec_node *fn) {
     return NULL;
 }
 
-   
 
-#else
-int lde_mp2mp_start(void) {
-    printf("%s\n", __func__);
+int lde_mp2mp_set_mbb_hold_time(char *time) {
+
+    struct fec *f = NULL;
+    struct fec_node *fn = NULL;
+    uint16_t utime = 5;
+
+    if (time != NULL) utime = atoi(time);
+    else return -1;
+    RB_FOREACH(f, fec_tree, &ft) {
+		fn = (struct fec_node *)f;
+        if (fn->data != NULL && fn->fec.type == FEC_TYPE_IPV4) {
+            FEC_MP2MP_EXT(fn)->hold_time = utime;
+        }
+    }
+
     return 0;
 }
 
-int lde_mp2mp_up_proto_change(void) {
-    printf("%s\n", __func__);
+int lde_mp2mp_set_mbb_switch_time(char *time) {
+
+    struct fec *f = NULL;
+    struct fec_node *fn = NULL;
+    uint16_t utime = 5;
+
+    if (time != NULL) utime = atoi(time);
+    else return -1;
+    RB_FOREACH(f, fec_tree, &ft) {
+		fn = (struct fec_node *)f;
+        if (fn->data != NULL && fn->fec.type == FEC_TYPE_IPV4) {
+            FEC_MP2MP_EXT(fn)->switch_delay_time = utime;
+        }
+    }
+
     return 0;
 }
-#endif

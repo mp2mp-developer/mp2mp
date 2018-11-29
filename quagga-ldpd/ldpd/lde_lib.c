@@ -190,7 +190,7 @@ mp2mp_uscb_dump(pid_t pid)
             if (me->map.type == MAP_TYPE_MP2MP_DOWN)  rtctl.mp2mp_flags |= D_MAPPING_IN;
             if (fn->data != NULL)  rtctl.mp2mp_flags |= FEC_MP2MP_EXT(fn)->mbb_flag;
 
-            if (fn->data != NULL) printf("%s, mbb_flag: %u\n", __func__, FEC_MP2MP_EXT(fn)->mbb_flag);
+            if (fn->data != NULL) printf("%s, mbb_flag: %u, rtctl.mp2mp_flags: %u\n", __func__, FEC_MP2MP_EXT(fn)->mbb_flag, rtctl.mp2mp_flags);
 			lde_imsg_compose_ldpe(IMSG_CTL_SHOW_MP2MP_USCB, 0, pid,
 			    &rtctl, sizeof(rtctl));
 			rtctl.first = 0;
@@ -258,6 +258,8 @@ mp2mp_dscb_dump(pid_t pid)
 			    &rtctl, sizeof(rtctl));
 			rtctl.first = 0;
             rtctl.mp2mp_flags = 0;
+            rtctl.mp_status_code = me->map.st.status_code;
+            printf("%s, rtctl.mp_status_code: %d, me->map.st.status_code: %d\n", __func__, rtctl.mp_status_code, me->map.st.status_code);
 		}
 		if (LIST_EMPTY(&fn->downstream)) {
 			rtctl.in_use = 0;
@@ -265,6 +267,7 @@ mp2mp_dscb_dump(pid_t pid)
 			rtctl.remote_label = NO_LABEL;
             rtctl.flags = 0;
             rtctl.mp2mp_flags = 0;
+            rtctl.mp_status_code = 0;
 
 			lde_imsg_compose_ldpe(IMSG_CTL_SHOW_MP2MP_DSCB, 0, pid,
 			    &rtctl, sizeof(rtctl));
@@ -625,17 +628,18 @@ lde_check_mapping(struct map *map, struct lde_nbr *ln)
         if (me == NULL)
             me = lde_map_add(ln, fn, 0);
         me->map = *map;
-        printf("%s, recive and save mapping\n", __func__);
+        printf("%s, recive and save mapping, status_code: %d\n", __func__, me->map.st.status_code);
 		LIST_FOREACH(me, &fn->downstream, entry) {
-            printf("%s, me->map.type: %d, me->map.label: %u\n", __func__, me->map.type, me->map.label);
+            printf("%s, me->map.type: %d, me->map.label: %u, me->map.st.status_code: %d\n", __func__, me->map.type, me->map.label, me->map.st.status_code);
         }
 
         if (map->type == MAP_TYPE_MP2MP_DOWN) {
-            if (ldeconf->rtr_id.s_addr == ROOT) lde_mp2mp_process_u_mapping(fn);
+            if (ldeconf->rtr_id.s_addr == fn->fec.u.ipv4.prefix.s_addr) lde_mp2mp_process_u_mapping(fn);
             struct lde_nbr *lnp = NULL;
             lnp = lde_mp2mp_get_nexthop(fn);
             if (lnp != NULL) {
-                lde_send_labelmapping(lnp, fn, 2);
+                if(me->map.st.status_code == 0) lde_send_labelmapping(lnp, fn, 2);
+                if(me->map.st.status_code == MBB_STATUS_REQUEST) lde_send_labelmapping(lnp, fn, 4);
             }
         }
         if (map->type == MAP_TYPE_MP2MP_UP) { 

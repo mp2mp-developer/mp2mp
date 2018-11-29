@@ -275,6 +275,8 @@ control_dispatch_imsg(struct thread *thread)
            break;
         case IMSG_CTL_MP2MP_SET_ROOT:
         case IMSG_CTL_MP2MP_ROUTE_CHANGE:
+        case IMSG_CTL_MP2MP_SET_HOLD_TIME:
+        case IMSG_CTL_MP2MP_SET_SWITCH_TIME:
             printf("%s, msg_type: %d\n", __func__, imsg.hdr.type);
             //TODO: 要传ip参数
             c->iev.ibuf.pid = imsg.hdr.pid;

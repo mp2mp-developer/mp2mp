@@ -1345,6 +1345,66 @@ DEFUN (ldp_mpls_mp2mp_set_nexthop_addr,
   return ldp_vty_mp2mp_route_change (vty, args);
 }
 
+DEFUN (ldp_mpls_mp2mp_set_holdtime,
+       ldp_mpls_mp2mp_set_holdtime_cmd,
+       "mpls mp2mp set holdtime",
+       "mpls\n"
+       "mp2mp protocol\n"
+       "set arg\n"
+       "set mp2mp mbb hold time\n")
+{
+  struct vty_arg *args[] = { NULL };
+  return ldp_vty_mp2mp_hold_time (vty, args);
+}
+
+DEFUN (ldp_mpls_mp2mp_set_holdtime_addr,
+       ldp_mpls_mp2mp_set_holdtime_addr_cmd,
+       "mpls mp2mp set holdtime (A.B.C.D|X:X::X:X)",
+       "mpls\n"
+       "mp2mp protocol\n"
+       "set arg\n"
+       "set mp2mp mbb hold time\n"
+       "IPv4 address\n"
+       "IPv6 address\n")
+{
+  struct vty_arg *args[] =
+    {
+      &(struct vty_arg) { .name = "holdtime", .value = argv[0] },
+      NULL
+    };
+  return ldp_vty_mp2mp_hold_time (vty, args);
+}
+
+DEFUN (ldp_mpls_mp2mp_set_switchtime,
+       ldp_mpls_mp2mp_set_switchtime_cmd,
+       "mpls mp2mp set switchtime",
+       "mpls\n"
+       "mp2mp protocol\n"
+       "set arg\n"
+       "set mp2mp mbb switch delay time\n")
+{
+  struct vty_arg *args[] = { NULL };
+  return ldp_vty_mp2mp_switch_time (vty, args);
+}
+
+DEFUN (ldp_mpls_mp2mp_set_switchtime_addr,
+       ldp_mpls_mp2mp_set_switchtime_addr_cmd,
+       "mpls mp2mp set switchtime (A.B.C.D|X:X::X:X)",
+       "mpls\n"
+       "mp2mp protocol\n"
+       "set arg\n"
+       "set mp2mp mbb switch delay time\n"
+       "IPv4 address\n"
+       "IPv6 address\n")
+{
+  struct vty_arg *args[] =
+    {
+      &(struct vty_arg) { .name = "switchtime", .value = argv[0] },
+      NULL
+    };
+  return ldp_vty_mp2mp_switch_time (vty, args);
+}
+
 DEFUN (ldp_clear_mpls_ldp_neighbor,
        ldp_clear_mpls_ldp_neighbor_cmd,
        "clear mpls ldp neighbor",
@@ -1834,6 +1894,10 @@ ldp_vty_init (void)
   install_element (ENABLE_NODE, &ldp_mpls_mp2mp_set_root_addr_cmd);
   install_element (ENABLE_NODE, &ldp_mpls_mp2mp_set_nexthop_cmd);
   install_element (ENABLE_NODE, &ldp_mpls_mp2mp_set_nexthop_addr_cmd);
+  install_element (ENABLE_NODE, &ldp_mpls_mp2mp_set_holdtime_cmd);
+  install_element (ENABLE_NODE, &ldp_mpls_mp2mp_set_holdtime_addr_cmd);
+  install_element (ENABLE_NODE, &ldp_mpls_mp2mp_set_switchtime_cmd);
+  install_element (ENABLE_NODE, &ldp_mpls_mp2mp_set_switchtime_addr_cmd);
   install_element (ENABLE_NODE, &ldp_clear_mpls_ldp_neighbor_cmd);
   install_element (ENABLE_NODE, &ldp_clear_mpls_ldp_neighbor_addr_cmd);
   install_element (ENABLE_NODE, &ldp_debug_mpls_ldp_discovery_hello_dir_cmd);
@@ -1871,6 +1935,10 @@ ldp_vty_init (void)
   install_element (VIEW_NODE, &ldp_mpls_mp2mp_set_root_addr_cmd);
   install_element (VIEW_NODE, &ldp_mpls_mp2mp_set_nexthop_cmd);
   install_element (VIEW_NODE, &ldp_mpls_mp2mp_set_nexthop_addr_cmd);
+  install_element (VIEW_NODE, &ldp_mpls_mp2mp_set_holdtime_cmd);
+  install_element (VIEW_NODE, &ldp_mpls_mp2mp_set_holdtime_addr_cmd);
+  install_element (VIEW_NODE, &ldp_mpls_mp2mp_set_switchtime_cmd);
+  install_element (VIEW_NODE, &ldp_mpls_mp2mp_set_switchtime_addr_cmd);
   install_element (VIEW_NODE, &ldp_clear_mpls_ldp_neighbor_cmd);
   install_element (VIEW_NODE, &ldp_clear_mpls_ldp_neighbor_addr_cmd);
 }
