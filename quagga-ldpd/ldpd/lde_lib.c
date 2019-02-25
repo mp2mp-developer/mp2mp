@@ -18,13 +18,13 @@
  */
 
 #include <zebra.h>
+#include <stdlib.h>
 
 #include "ldpd.h"
 #include "lde.h"
 #include "log.h"
 
 #include "mpls.h"
-
 
 static __inline int	 fec_compare(struct fec *, struct fec *);
 static int		 lde_nbr_is_nexthop(struct fec_node *,
@@ -57,6 +57,7 @@ fec_compare(struct fec *a, struct fec *b)
 
 	switch (a->type) {
 	case FEC_TYPE_IPV4:
+	case FEC_TYPE_MP2MP:
 		if (ntohl(a->u.ipv4.prefix.s_addr) <
 		    ntohl(b->u.ipv4.prefix.s_addr))
 			return (-1);
@@ -167,6 +168,7 @@ mp2mp_uscb_dump(pid_t pid)
 		rtctl.first = 1;
 		switch (fn->fec.type) {
 		case FEC_TYPE_IPV4:
+		case FEC_TYPE_MP2MP:
 			rtctl.af = AF_INET;
 			rtctl.prefix.v4 = fn->fec.u.ipv4.prefix;
 			rtctl.prefixlen = fn->fec.u.ipv4.prefixlen;
@@ -229,6 +231,7 @@ mp2mp_dscb_dump(pid_t pid)
 		rtctl.first = 1;
 		switch (fn->fec.type) {
 		case FEC_TYPE_IPV4:
+		case FEC_TYPE_MP2MP:
 			rtctl.af = AF_INET;
 			rtctl.prefix.v4 = fn->fec.u.ipv4.prefix;
 			rtctl.prefixlen = fn->fec.u.ipv4.prefixlen;
@@ -324,6 +327,7 @@ rt_dump(pid_t pid)
 		rtctl.first = 1;
 		switch (fn->fec.type) {
 		case FEC_TYPE_IPV4:
+		case FEC_TYPE_MP2MP:
 			rtctl.af = AF_INET;
 			rtctl.prefix.v4 = fn->fec.u.ipv4.prefix;
 			rtctl.prefixlen = fn->fec.u.ipv4.prefixlen;
@@ -482,6 +486,7 @@ egress_label(enum fec_type fec_type)
 {
 	switch (fec_type) {
 	case FEC_TYPE_IPV4:
+	case FEC_TYPE_MP2MP:
 		if (ldeconf->ipv4.flags & F_LDPD_AF_EXPNULL)
 			return (MPLS_LABEL_IPV4NULL);
 		break;
@@ -532,6 +537,7 @@ lde_kernel_insert(struct fec *fec, int af, union ldpd_addr *nexthop,
 
 	switch (fn->fec.type) {
 	case FEC_TYPE_IPV4:
+	case FEC_TYPE_MP2MP:
 	case FEC_TYPE_IPV6:
 		ln = lde_nbr_find_by_addr(af, &fnh->nexthop);
 		break;
@@ -679,6 +685,7 @@ lde_check_mapping(struct map *map, struct lde_nbr *ln)
 		/* LMp.15: install FEC in FIB */
 		switch (fec.type) {
 		case FEC_TYPE_IPV4:
+		case FEC_TYPE_MP2MP:
 		case FEC_TYPE_IPV6:
 			if (!lde_address_find(ln, fnh->af, &fnh->nexthop))
 				continue;
@@ -746,6 +753,7 @@ lde_check_request(struct map *map, struct lde_nbr *ln)
 	LIST_FOREACH(fnh, &fn->nexthops, entry) {
 		switch (fec.type) {
 		case FEC_TYPE_IPV4:
+		case FEC_TYPE_MP2MP:
 		case FEC_TYPE_IPV6:
 			if (!lde_address_find(ln, fnh->af, &fnh->nexthop))
 				continue;
@@ -918,6 +926,7 @@ lde_check_withdraw(struct map *map, struct lde_nbr *ln)
 	LIST_FOREACH(fnh, &fn->nexthops, entry) {
 		switch (fec.type) {
 		case FEC_TYPE_IPV4:
+		case FEC_TYPE_MP2MP:
 		case FEC_TYPE_IPV6:
 			if (!lde_address_find(ln, fnh->af, &fnh->nexthop))
 				continue;
@@ -962,6 +971,7 @@ lde_check_withdraw_wcard(struct map *map, struct lde_nbr *ln)
 		LIST_FOREACH(fnh, &fn->nexthops, entry) {
 			switch (f->type) {
 			case FEC_TYPE_IPV4:
+			case FEC_TYPE_MP2MP:
 			case FEC_TYPE_IPV6:
 				if (!lde_address_find(ln, fnh->af,
 				    &fnh->nexthop))
@@ -1034,7 +1044,12 @@ lde_gc_stop_timer(void)
 {
 	THREAD_TIMER_OFF(gc_timer);
 }
-
+/*
+uint8_t lde_mp2mp_gen_ov(void)
+{
+   return rand() % 0xff; 
+}
+*/
 struct fec_node *
 fec_mp2mp_add(struct fec *fec)
 {
@@ -1046,11 +1061,13 @@ fec_mp2mp_add(struct fec *fec)
         fatal(__func__);
         return NULL;    
     }
-    FEC_MP2MP_EXT(fn)->mbb_flag |= SEND_MAPPING;    
+    FEC_MP2MP_EXT(fn)->mbb_flag |= NONE;
+    FEC_MP2MP_EXT(fn)->ov = lde_mp2mp_gen_ov(); 
     FEC_MP2MP_EXT(fn)->hold_time = 5;
     FEC_MP2MP_EXT(fn)->switch_delay_time = 5;
     FEC_MP2MP_EXT(fn)->hold_timer = NULL;
     FEC_MP2MP_EXT(fn)->switch_delay_timer = NULL;
+    FEC_MP2MP_EXT(fn)->peer = NULL;
 
     return fn;
 }

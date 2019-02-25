@@ -25,6 +25,7 @@
 #include "ldp_debug.h"
 
 #include "mpls.h"
+#include <unistd.h>
 
 static void	 enqueue_pdu(struct nbr *, struct ibuf *, uint16_t);
 static int	 gen_label_tlv(struct ibuf *, uint32_t);
@@ -52,6 +53,7 @@ send_labelmessage(struct nbr *nbr, uint16_t type, struct mapping_head *mh)
 	int			 first = 1;
 	int			 err = 0;
 
+    printf("send_labelmapping:getpid():%d\n", getpid());
 	/* nothing to send */
 	if (TAILQ_EMPTY(mh))
 		return;

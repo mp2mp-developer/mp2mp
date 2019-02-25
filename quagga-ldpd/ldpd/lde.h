@@ -36,7 +36,8 @@
 enum fec_type {
 	FEC_TYPE_IPV4,
 	FEC_TYPE_IPV6,
-	FEC_TYPE_PWID
+	FEC_TYPE_PWID,
+    FEC_TYPE_MP2MP
 };
 
 struct fec {
@@ -131,10 +132,12 @@ struct fec_node {
 
 struct fec_mp2mp_ext {
     uint8_t mbb_flag;
+    uint8_t ov;
     uint16_t hold_time;
     uint16_t switch_delay_time;
     struct thread *hold_timer;
     struct thread *switch_delay_timer;
+    struct lde_nbr *peer;         //选出的上游邻居
 };
 
 #define LDE_GC_INTERVAL 300
@@ -222,6 +225,8 @@ int lde_mp2mp_create_withdraw(struct fec_node *fn, struct in_addr nid);
 struct lde_nbr *lde_mp2mp_get_nexthop(struct fec_node *fn);
 int lde_mp2mp_set_mbb_hold_time(char *time);
 int lde_mp2mp_set_mbb_switch_time(char *time);
+uint8_t lde_mp2mp_gen_ov(void);
+void lde_mp2mp_get_upstream_peer(fn);
 
 /* l2vpn.c */
 struct l2vpn	*l2vpn_new(const char *);
