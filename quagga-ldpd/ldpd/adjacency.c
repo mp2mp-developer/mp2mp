@@ -58,7 +58,7 @@ adj_new(struct in_addr lsr_id, struct hello_source *source,
 		source->target->adj = adj;
 		break;
 	}
-
+    printf("%s, adj->lsr_id:%s\n", __func__, inet_ntoa(lsr_id));
 	return (adj);
 }
 

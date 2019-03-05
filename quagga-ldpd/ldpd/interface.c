@@ -373,6 +373,21 @@ if_update(struct iface *iface, int af)
 		if_update_af(&iface->ipv4, link_ok);
 	if (af == AF_INET6 || af == AF_UNSPEC)
 		if_update_af(&iface->ipv6, link_ok);
+
+
+	struct adj* a = NULL;
+    struct if_addr	*if_addr;
+
+    printf("%s, iface->name:%s, iface->ifindex:%u, iface->type:%d\n", __func__, iface->name, iface->ifindex, iface->type);
+	LIST_FOREACH(if_addr, &(iface->addr_list), entry) {
+		printf("%s, if_addr->addr:%s, ", __func__, inet_ntoa(if_addr->addr.v4));
+		printf("if_addr->dstbrd:%s\n", inet_ntoa(if_addr->dstbrd.v4));
+	}
+	printf("%s, af:%d, enabled:%d, state:%d\n", __func__, iface->ipv4.af, iface->ipv4.enabled, iface->ipv4.state);
+	LIST_FOREACH(a, &(iface->ipv4.adj_list), ia_entry) {
+		printf("%s, adj->lsr_id:%s\n", __func__, inet_ntoa(a->lsr_id));
+	}
+
 }
 
 void

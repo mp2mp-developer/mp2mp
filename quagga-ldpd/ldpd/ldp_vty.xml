@@ -314,6 +314,7 @@
         <option name="set" help="set arg">
           <option name="root" help="set mp2mp root ip" function="ldp_vty_mp2mp_set_root">
             <select options="addr" arg="rootip" function="ldp_vty_mp2mp_set_root"/>
+            <select options="addr" arg="ov" function="ldp_vty_mp2mp_set_root"/>
           </option>
           <option name="nexthop" help="set mp2mp nexthop" function="ldp_vty_mp2mp_route_change">
             <select options="addr" arg="nexthopip" function="ldp_vty_mp2mp_route_change"/>
